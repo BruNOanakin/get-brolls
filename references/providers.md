@@ -1,0 +1,188 @@
+---
+type: reference
+status: current
+created: 2026-09-17
+updated: 2026-10-31
+tags: [get-brolls, fontes, provedores]
+---
+
+# Fontes — qual tentar, nessa ordem
+
+**Literal primeiro.** Procure footage, print ou imagem real do fato, da pessoa, do produto, da notícia ou da tela que a narração cita. Banco genérico não substitui fonte literal: Pexels e Pixabay entram **somente quando o usuário pedir stock explicitamente**, nunca para fechar a conta de um beat que ficou sem fonte.
+
+> **Caminhos.** Os exemplos escrevem `scripts/gb.py` por brevidade. Rode sempre pelo **caminho absoluto da instalação da skill** (no plugin, `${CLAUDE_PLUGIN_ROOT}/scripts/gb.py`) e passe `--project` com a pasta absoluta do usuário em todo comando. No Windows, use `python` no lugar de `python3`.
+
+Antes de sair buscando, consulte o que já se sabe:
+
+```sh
+python3 scripts/gb.py rules --project PROJETO
+python3 scripts/gb.py references --project PROJETO
+python3 scripts/gb.py library --search "termo" --project PROJETO
+```
+
+A biblioteca pessoal (`~/.getbrolls/library`, desligável com `GB_LIBRARY=off`) lembra que busca rendeu, que fonte falhou e que trecho já serviu. Ela é ponteiro editorial e nada além disso: `rights_not_transferable` vem em toda resposta e nenhuma pista dela aprova nem permite nada. A biblioteca guarda de que cliente é cada entrada (o `client` do `project.json` de onde ela foi guardada): dentro de um projeto de cliente, `library --search` e as pistas só trazem o que foi guardado sob esse cliente ou sem cliente, e a resposta diz `scope: "client:<cliente>"`; sem `scope`, o contexto é o da própria pessoa e só aparece o que foi guardado sem cliente. Entrada de outro cliente nunca aparece. Projeto sem `project.json` (layout 0) usa o `cliente` do `ROTEIRO.md`; se ele não for um slug, o `learn` recusa (corrija com `roteiro --action check --project PROJETO`) e a busca fica só no contexto da própria pessoa. O que foi guardado antes da 2.6, mesmo num projeto de cliente, vale como da própria pessoa e aparece em todo lugar; para restringir uma entrada, acrescente a ela `"client": "<cliente>"` em `~/.getbrolls/library/index.json`, à mão. Mesmo assim, não cole o texto dela na conversa com um cliente. As pistas anexadas ao `search` (`library_hints[]`) já vêm sem o motivo escrito noutro projeto; o texto completo só aparece quando você pede `library --search` de propósito.
+
+As regras valem em camadas: `~/.getbrolls/RULES.md` → `GB_RULES_FILE` → `RULES.md` do projeto. `rules` mostra em `sources` de onde veio cada campo. Responsabilidade e declaração **nunca** vêm da camada global.
+
+Depois de uma decisão útil, guarde-a:
+
+```sh
+python3 scripts/gb.py learn --from-candidate ID --project PROJETO
+python3 scripts/gb.py learn --query "..." --provider FONTE --outcome hit --project PROJETO
+python3 scripts/gb.py learn --preference "frase da pessoa" --project PROJETO
+```
+
+## YouTube
+
+Sem API key — usa yt-dlp.
+
+```sh
+python3 scripts/gb.py search --provider youtube --query "entidade ação" --intent literal --project PROJETO
+python3 scripts/gb.py resolve --url URL --shot BEAT_ID --project PROJETO
+```
+
+Detalhe operacional na seção [YouTube](../docs/GUIDE.md#provedor--youtube) do guia.
+
+`--shot BEAT_ID` também funciona no `search`: ele liga cada candidato ao beat do
+BRIEF.md na hora, sem precisar re-registrar por URL depois — e só aceita as fontes de
+`allowed_sources` daquele beat (fora da lista, a busca é recusada com a lista certa). E `--dry-run` lista o que
+a fonte devolveu **sem gravar nada** no projeto — use-o para sondar uma query antes de
+sujar as contagens do `status` com material que você não vai usar.
+
+## Instagram
+
+Procedimento próprio, com navegador e dois streams. Está inteiro em [`references/instagram.md`](instagram.md) — leia antes de tocar em qualquer Reel.
+
+## TikTok
+
+Descubra a URL completa pelo navegador e registre com `resolve --url` — o registro já traz título, `@handle` e duração, num pedido só de metadados.
+
+A página de incorporação `https://www.tiktok.com/embed/@usuario` é a listagem pública principal para descobrir os posts recentes de um perfil sem sessão: ela traz os ids no HTML. Pegue os ids, monte `https://www.tiktok.com/@usuario/video/<id>` e passe cada um ao `resolve --url`. Não visite a grade do perfil (`tiktok.com/@usuario`) quando ela exigir sessão. Login, CAPTCHA ou desafio, recusa explícita ou limite de requisições em qualquer página, do perfil ou da incorporação, é uma parada: pare, conte isso à pessoa e peça as URLs dos posts; não troque de rota para contornar a exigência. Achar o endereço não é permissão: as condições do post seguem pelo `permit`.
+
+Veja [TikTok](../docs/GUIDE.md#provedor--tiktok).
+
+## Link direto de vídeo e página com player embutido
+
+Quando a pessoa manda um link de host que nenhuma fonte reconhece, `resolve --url` ainda tenta duas rotas, nesta ordem:
+
+- **Link direto** (`.m3u8` ou `.mp4` no fim do caminho, com ou sem query): vira candidato da fonte `direct_stream` e segue pelo yt-dlp. Só HTTPS público, sem usuário e senha na URL e fora da rede local.
+- **Página com player embutido** (o componente web do player): o getbrolls lê a página uma vez, sem cookie e sem rodar JavaScript, pega o HLS do player e registra a fonte `embedded_player`, com a página como referer do yt-dlp. A chave `drm` do player não recusa nada: o vídeo é tentado como o navegador o toca (AES-128 com a chave que o servidor entrega). Só o DRM de navegador declarado na playlist (Widevine, FairPlay, PlayReady) é recusado, e você não tenta contornar nem extrair chave.
+
+```sh
+python3 scripts/gb.py resolve --url URL_DA_PAGINA_OU_DO_VIDEO --shot BEAT_ID --project PROJETO
+python3 scripts/gb.py resolve --url LINK_M3U8_OU_MP4 --referer URL_DA_PAGINA --shot BEAT_ID --project PROJETO
+```
+
+Se a recusa vier como "Fonte de URL não suportada", leia o `suggested_route` do JSON de erro antes de pedir algo à pessoa:
+
+- `next_command` presente (a página cita um link direto, ou embute um vídeo do YouTube/Instagram): rode esse argv como lista de argumentos, sem shell (ou monte a linha com `shlex.join`, nunca juntando com espaço); ele já traz o `--project` e, no link direto, o `--referer` da página. Acrescente o `--shot` do beat.
+- `next_command` nulo: siga `alternatives`. Sem vídeo no HTML (funil ofuscado, player que o getbrolls não lê), peça o link direto: no navegador, DevTools > Network, filtro `m3u8` (ou `mp4`), play, e a URL da requisição. Com `kind: drm`, procure o trailer ou um trecho oficial do mesmo vídeo no YouTube ou no Instagram, ou peça o original para `resolve --file`.
+
+Com o aviso `EMBEDDED_PLAYER_DECOY_POSSIBLE` no `resolve`, o player dá sinal de proteção anti-download, que entrega um vídeo alternativo a quem baixa: mostre a prévia à pessoa e confirme que é o vídeo da página antes do `approve`. O aviso `EMBEDDED_PLAYER_GUESSED` pede o mesmo: o script do player foi achado só pelo nome do arquivo, e o link pode ser de exemplo de uma biblioteca. Achar o endereço não é permissão: licença e autoria ficam desconhecidas e as condições seguem pelo `permit`, como em qualquer fonte. Veja [Link direto e player embutido](../docs/GUIDE.md#provedor--link-direto-e-player-embutido).
+
+## Bancos genéricos (só sob pedido)
+
+```sh
+python3 scripts/gb.py search --provider pexels --query "..." --project PROJETO
+python3 scripts/gb.py search --provider pixabay --query "..." --project PROJETO
+```
+
+Chaves de Pexels/Pixabay são opcionais e ficam no ambiente ou num `.env` apontado com `--env-file`. Veja [Bancos](../docs/GUIDE.md#bancos--busca-prévia-e-coleta).
+
+## Domínio público e arquivo
+
+Wikimedia Commons e NASA não pedem chave e costumam ser a rota literal mais rápida para fato histórico, espaço e ciência: `--provider commons` ou `--provider nasa`. Quando você já tem o link do item, `resolve --url` registra direto: `https://images.nasa.gov/details/<id>` no acervo da NASA e `https://commons.wikimedia.org/wiki/File:<nome>` no Commons — vídeo ou imagem estática nos dois. Para um beat de foto, peça imagem à fonte: `search --provider commons --media image` (ou `--provider nasa`); `--media` aceita `image`, `video` e `any` (padrão), e só NASA e Commons publicam os dois tipos — YouTube e os bancos ignoram a flag. Foto não tem trecho: pule o `inspect` e rode `preview --candidate ID` sem `--start` nem `--end` — a imagem vem para o cache privado, a prévia é o cartaz dela, e o `fetch` depois do `approve` e do `permit` copia exatamente esses bytes. Arquivo local entra com `resolve --file --source-url --creator --shot`.
+
+Panorama completo em [Fontes e transportes](../docs/GUIDE.md#fontes-e-transportes).
+
+## Quantidade
+
+Insert isolado não exige roteiro completo. Para roteiro completo, o padrão editorial é buscar 8+ clipes literais quando o conteúdo comportar; prefira pessoas, produtos e fatos nomeados, e 1080p quando disponível. Não preencha com stock genérico para atingir uma contagem.
+
+## Sem pista para escolher o intervalo
+
+Quando `inspect` não devolve janela nenhuma — vídeo sem legenda, sem capítulo e sem tempo escrito na descrição —, varra o vídeo inteiro num contact sheet de baixa resolução:
+
+```sh
+python3 scripts/gb.py preview --scan --candidate ID --project PROJETO
+```
+
+O `--scan` não define intervalo: ele só mostra o vídeo todo, um quadro a cada N segundos (N = duração/12), com teto de `GB_SCAN_MAX_SECONDS` (padrão 900 s). **Ele baixa mídia de trabalho** — até esse teto — e por isso pode levar minutos num vídeo longo; rode em segundo plano se o seu shell tiver limite de tempo. A resposta traz `scan.downloaded_seconds`, `scan.start_s`/`scan.end_s` e um `note` dizendo que trecho da fonte entrou na grade — os rótulos de `frame_times_s` são tempo da fonte, mesmo quando a mídia de trabalho começa depois do zero. **Prefira `inspect --query` primeiro:** ele responde de graça, sem baixar nada (Commons e bancos incluídos: a duração vem dos metadados da fonte; a exceção é vídeo da NASA, que não publica a duração — ali o `inspect` baixa o arquivo uma vez para o cache privado e avisa o tamanho em `warnings`), e só quando não sobrar pista é que a varredura (que baixa o vídeo inteiro até o teto) compensa. A varredura ignora o intervalo já escolhido no candidato: ela é exploratória e não define nem invalida segmento. Escolha o `preview --start` e o `--end` olhando o resultado.
+
+Quando `inspect` não encontra nada que case com a frase, ele ainda devolve janelas com
+`score: 0` e a `source` que as gerou (capítulo, legenda ou espaçamento pelo relógio):
+são ponto de partida para confirmar no contact sheet, nunca resposta pronta.
+
+Quando o pedido é uma referência estática — um print, uma capa, um quadro só —, `preview --reference-only` gera apenas essa referência, sem GIF.
+
+## Onde ficam os arquivos da prévia
+
+Toda resposta de `preview` — corte normal, `--reference-only`, `--scan` e imagem estática — traz `files`, com o **caminho absoluto** de `contact_sheet`, `poster`, `gif`, `review` e, na varredura, `scan`. É esse caminho que você abre para olhar.
+
+No `status` e dentro do `manifest.json` o mesmo arquivo aparece como `preview.contact_sheet_path`, e ali ele é **relativo a `brolls/`** (`previews/<id>.jpg`). Os dois falam do mesmo arquivo; o que muda é a forma. Para montar o caminho absoluto a partir do manifesto, junte `<projeto>/brolls/` na frente.
+
+## Um `preview` por chamada
+
+Não encadeie várias prévias numa chamada só de shell. Cada `preview` baixa mídia de trabalho e chama o FFmpeg; três ou quatro em sequência passam do teto de tempo da ferramenta, e a chamada morre no meio — com arquivos pela metade e nenhum resumo. Rode um `preview` por chamada, leia o `files.contact_sheet` daquele item, e só então peça o próximo. Vale o mesmo para `preview --scan`, que sozinho já pode levar minutos.
+
+## Print de tela (UI)
+
+Quando o beat pede a tela real de um produto, de um painel ou de um site — não um
+vídeo dele —, a rota é capturar a página e registrar o arquivo como candidato:
+
+```sh
+python3 scripts/gb.py browser-plan --url URL_PUBLICA --project PROJETO
+# execute os passos devolvidos (open / resize / snapshot / screenshot) e então:
+python3 scripts/gb.py resolve --file CAMINHO_DO_PNG --source-url URL_PUBLICA \
+  --asset-type web_screenshot --shot BEAT_ID --project PROJETO
+python3 scripts/gb.py preview --reference-only --candidate ID --project PROJETO
+```
+
+`--source-url` é obrigatório para print: sem ele a origem se perde e `resolve` recusa.
+Capture a página de verdade, com o navegador: não descreva de memória nem reconstrua a
+interface. O tamanho de viewport que o `browser-plan` sugere é **dica**, não regra —
+se a tela que interessa só aparece em outra largura, use a que mostra o que a narração
+cita e diga isso na revisão.
+
+`--reference-only` vale também para vídeo cuja fonte não libera o trecho: rode-o
+**sozinho**, sem `preview --start` e `--end`, e a skill gera só o cartaz estático (miniatura da
+fonte ou primeiro quadro), o bastante para a pessoa decidir.
+
+**Aviso de cookies antes de capturar.** Muita página abre com uma faixa de consentimento
+por cima justamente do que a narração cita, e o print sai com o banner tapando a tela. Feche
+a faixa com os helpers do navegador antes do `screenshot` — clique na opção **mais
+preservadora de privacidade** que a página oferecer ("Rejeitar tudo", "Somente essenciais",
+"Continuar sem aceitar"), nunca em "Aceitar tudo", e não aceite termos em nome do usuário.
+Nada disso é automático: não existe código na skill que dispense banner sozinho, é uma
+interação do navegador, feita à vista, antes da captura. Se a faixa não fechar, diga isso na
+revisão em vez de entregar um print tapado.
+
+**Tela de um aplicativo de desktop.** Quando o beat pede a interface de um programa que roda
+na máquina — um editor, uma IDE, um terminal, um painel instalado —, não existe URL para o
+`browser-plan` abrir. Duas rotas, nessa ordem: (1) a tela do próprio usuário — peça a ele o
+screenshot do seu computador e registre o arquivo com `resolve --file --source-url` (a
+`--source-url` aqui é a página oficial do produto) e `--asset-type web_screenshot`; ou (2) uma
+captura pública da interface — um tutorial ou demonstração no YouTube que mostre a mesma tela,
+achado com `search --provider youtube`, localizado com `inspect --query` e confirmado com
+`preview`. A rota (1) mostra a tela real dele e é sempre a melhor quando ele pode mandar; a
+rota (2) é material de terceiro e passa pelo `permit` como qualquer outro. O que não vale é
+recriar a interface de memória.
+
+## Fontes de plugin
+
+`providers` marca com `plugin` a fonte que vem de um plugin habilitado, e com `route` a que entrega o arquivo por uma rota do plugin. O fluxo é o mesmo das outras fontes, com uma diferença: rota que consome licença ou cota só baixa no `fetch`. Se o `preview` responder que a fonte só entrega no `fetch`, gere a referência e siga os portões:
+
+```sh
+python3 scripts/gb.py preview --candidate ID --start INICIO --end FIM --reference-only --project PROJETO
+# numa foto, no lugar da linha acima (foto não tem trecho):
+python3 scripts/gb.py preview --candidate ID --reference-only --project PROJETO
+python3 scripts/gb.py approve --candidate ID --by NOME --channel chat --statement "frase exata" --project PROJETO
+python3 scripts/gb.py permit --candidate ID --evidence "condições reais" --project PROJETO
+python3 scripts/gb.py fetch --candidate ID --project PROJETO
+```
+
+A licença que a rota registrar aparece em `rights.evidence` como evidência a mais; o `permit` humano continua obrigatório. Plugins também trazem rotinas próprias: `x --list` mostra quais, e `x PLUGIN COMANDO --project PROJETO` roda uma — elas só leem o projeto. Instalar, habilitar ou atualizar plugin é decisão da pessoa: mostre o preview de `plugins --action install`, `enable` ou `update` e só rode com `--yes` depois do ok dela — `install`/`update` (e o `enable` de um plugin `suspended`, cuja prévia mostra o que mudou) também pedem `--expect SHA256`, igual ao valor que a prévia mostrou.
+
+## Quando não há fonte
+
+Reporte o que você tentou, com a fonte real do erro, e pergunte ao usuário se ele tem material próprio ou um link. Falha de extração é reportada com o motivo real: não invente indisponibilidade permanente nem troque de arquitetura por conta própria.

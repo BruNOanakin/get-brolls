@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "getbrolls Candidate v1",
+  "$id": "https://raw.githubusercontent.com/engenheirodevideo/get-brolls/v2.6.2/schemas/candidate.schema.json",
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "provider",
+    "source_id",
+    "source_url",
+    "media",
+    "preview",
+    "segment",
+    "rights",
+    "acquisition",
+    "approval",
+    "output",
+    "state"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,31}$",
+      "description": "Nome da fonte no registro (built-in ou plugin habilitado)."
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "source_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "state": {
+      "enum": [
+        "candidate",
+        "preview_ready",
+        "awaiting_approval",
+        "approved",
+        "acquired",
+        "verified",
+        "rejected",
+        "reference_only",
+        "blocked",
+        "failed"
+      ]
+    },
+    "segment": {
+      "type": "object",
+      "required": [
+        "start_s",
+        "end_s",
+        "revision"
+      ],
+      "properties": {
+        "start_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "end_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        }
+      }
+    },
+    "rights": {
+      "type": "object",
+      "required": [
+        "status",
+        "evidence"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "unknown",
+            "permitted",
+            "restricted"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256",
+        "verified"
+      ],
+      "properties": {
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verified": {
+          "type": "boolean"
+        }
+      }
+    },
+    "delivery": {
+      "description": "Camada derivada escrita por `deliver`. `path` é relativo à RAIZ DO PROJETO (começa em `entrega/`), ao contrário de `output.path`, que é relativo a `brolls/`. `method` diz como o arquivo foi ligado ao original.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "path",
+        "method"
+      ],
+      "properties": {
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "method": {
+          "enum": [
+            "hardlink",
+            "symlink",
+            "copy",
+            "planned",
+            null
+          ]
+        },
+        "sheet_sha256": {
+          "description": "sha256 do contact sheet que `deliver` entregou ao lado da mídia. Só um sheet de `entrega/` que ainda tem esses bytes é trocado pela prévia nova; outro conteúdo é edição da pessoa e vira conflito. Ausente quando o item não tem sheet ou foi entregue por versão anterior.",
+          "type": "string"
+        }
+      }
+    },
+    "title": { "type": "string" },
+    "query": { "type": ["string", "null"] },
+    "collected_at": { "type": "string" },
+    "media_url": { "type": ["string", "null"] },
+    "errors": { "type": "array" },
+    "warnings": { "type": "array" },
+    "creator": {
+      "type": "object",
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "url": { "type": ["string", "null"] },
+        "handle": { "type": ["string", "null"] }
+      }
+    },
+    "match": {
+      "type": "object",
+      "properties": {
+        "kind": { "enum": ["literal", "illustrative"] },
+        "reason": { "type": ["string", "null"] }
+      }
+    },
+    "media": {
+      "type": "object",
+      "properties": {
+        "duration_s": { "type": ["number", "null"] },
+        "width": { "type": ["integer", "null"] },
+        "height": { "type": ["integer", "null"] },
+        "fps": { "type": ["number", "null"] },
+        "kind": { "enum": ["video", "image"] }
+      }
+    },
+    "preview": { "type": "object" },
+    "acquisition": {
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" },
+        "method": { "type": ["string", "null"] },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "referer": {
+          "type": "string",
+          "description": "Página HTTPS de onde veio o vídeo (player embutido ou `resolve --referer`), sem query nem fragmento; vai como `--referer` ao yt-dlp."
+        }
+      }
+    },
+    "local_path": { "type": "string" },
+    "local_sha256": { "type": "string" },
+    "local_start_s": { "type": "number", "minimum": 0 },
+    "local_duration_s": { "type": ["number", "null"] },
+    "asset_type": { "enum": ["video", "image"] },
+    "shot": { "type": "string" },
+    "format": { "type": "object" },
+    "preview_scope": { "type": "string" },
+    "narration": { "type": ["string", "null"] },
+    "output_media": { "type": "object" },
+    "rejection": { "type": "object" },
+    "review": { "type": "object" },
+    "scan": { "type": "object" },
+    "captured_at": { "type": ["string", "null"] },
+    "context_image_path": { "type": "string" },
+    "context_image_sha256": { "type": "string" },
+    "context_image_media": { "type": "object" },
+    "full_preview_path": { "type": "string" },
+    "full_preview_sha256": { "type": "string" },
+    "full_preview_media": { "type": "object" },
+    "ext": {
+      "type": "object",
+      "description": "Dados de plugins, uma chave por id de plugin: reservado para versões futuras; ignorado pelo runtime atual.",
+      "additionalProperties": { "type": "object" }
+    }
+  }
+}

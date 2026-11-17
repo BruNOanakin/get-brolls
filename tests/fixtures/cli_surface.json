@@ -1,0 +1,3931 @@
+{
+  "subcommands": {
+    "analysis": {
+      "help": "Registrar mídias do projeto em analysis/ (id por conteúdo) e listar ou conferir os arquivos de análise",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "check",
+            "list",
+            "register"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "list: mídias registradas; check: confere os arquivos de analysis/; register: calcula o id por conteúdo e grava media.json (list e check só leem)",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "path",
+          "help": "Mídia a registrar, relativa ao projeto, com / (ex.: aroll/c01.mp4) (register)",
+          "nargs": null,
+          "option_strings": [
+            "--path"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "animation",
+            "aroll",
+            "broll",
+            "footage",
+            "music",
+            "narration",
+            "sfx",
+            "title",
+            "unknown"
+          ],
+          "default": null,
+          "dest": "role",
+          "help": "Papel da mídia (register); sem ele, vem da pasta: aroll/, broll/, assets/musica/, assets/sfx/",
+          "nargs": null,
+          "option_strings": [
+            "--role"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "approve": {
+      "help": "Registrar aprovação humana já recebida para o intervalo atual",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_AppendAction",
+          "choices": null,
+          "default": null,
+          "dest": "candidate",
+          "help": "ID do candidato a aprovar; repita a flag para aprovar vários (ou use --all)",
+          "nargs": null,
+          "option_strings": [
+            "--candidate"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "start",
+          "help": "Início do trecho na origem, em segundos",
+          "nargs": null,
+          "option_strings": [
+            "--start"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "end",
+          "help": "Fim do trecho na origem, em segundos",
+          "nargs": null,
+          "option_strings": [
+            "--end"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "by",
+          "help": "Nome de quem já aprovou explicitamente o trecho",
+          "nargs": null,
+          "option_strings": [
+            "--by"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "all",
+          "help": "Aplicar a mesma aprovação a todo candidato com prévia gerada e sem aprovação válida; use só quando todos eles foram mostrados à pessoa",
+          "nargs": 0,
+          "option_strings": [
+            "--all"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "chat",
+            "storyboard"
+          ],
+          "default": "chat",
+          "dest": "channel",
+          "help": "Por onde a decisão humana chegou; padrão chat",
+          "nargs": null,
+          "option_strings": [
+            "--channel"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "statement",
+          "help": "Frase exata dita por quem aprovou, registrada literalmente",
+          "nargs": null,
+          "option_strings": [
+            "--statement"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "assets": {
+      "help": "Listar componentes do projeto (marca, lettering, sfx, música, imagem, composições, A-ROLL) e resolver nomes",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "list",
+            "where"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "list: inventário; where: onde um nome resolve",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "aroll",
+            "composicao",
+            "imagem",
+            "lettering",
+            "marca",
+            "musica",
+            "sfx"
+          ],
+          "default": null,
+          "dest": "kind",
+          "help": "Tipo de componente",
+          "nargs": null,
+          "option_strings": [
+            "--kind"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "name",
+          "help": "Nome do componente, sem extensão (where)",
+          "nargs": null,
+          "option_strings": [
+            "--name"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "brief": {
+      "help": "Mostrar os beats do vídeo e o comando pronto de cada um",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "validate",
+          "help": "Só conferir o BRIEF.md e dizer o que está errado, sem listar comandos",
+          "nargs": 0,
+          "option_strings": [
+            "--validate"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "beat",
+          "help": "Mostrar apenas este beat, pelo id gravado no BRIEF.md",
+          "nargs": null,
+          "option_strings": [
+            "--beat"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "browser-plan": {
+      "help": "Planejar a captura de uma página pelo navegador autorizado",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "url",
+          "help": "URL pública da página a capturar",
+          "nargs": null,
+          "option_strings": [
+            "--url"
+          ],
+          "required": true
+        }
+      ]
+    },
+    "capabilities": {
+      "help": "Descrever em JSON os comandos, flags, códigos de saída e comandos de plugin desta instalação (para agentes)",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "Aceito; a saída já é JSON (reservado para o modo humano)",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "client": {
+      "help": "Registrar, listar, mostrar ou desregistrar pastas de cliente (prateleira em assets/, projetos/) no $GB_HOME/clients.json",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "add",
+            "list",
+            "remove",
+            "show"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "add: cria (ou reaproveita) <root>/<slug>/ e registra; list/show: só leem o registro e o client.json; remove: desregistra, sem apagar a pasta",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "slug",
+          "help": "Slug do cliente: minúsculas, números e - (add/show/remove)",
+          "nargs": null,
+          "option_strings": [
+            "--slug"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "name",
+          "help": "Nome de exibição do cliente novo (add); sem ele, o slug",
+          "nargs": null,
+          "option_strings": [
+            "--name"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "root",
+          "help": "Pasta existente, em caminho absoluto, onde nasce <root>/<slug>/ (add)",
+          "nargs": null,
+          "option_strings": [
+            "--root"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "deliver": {
+      "help": "Organizar os trechos coletados em entrega/, uma pasta por beat",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "dry_run",
+          "help": "Mostrar o que iria para entrega/ sem criar, ligar ou apagar nada",
+          "nargs": 0,
+          "option_strings": [
+            "--dry-run"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "doctor": {
+      "help": "Diagnosticar dependências, caminhos fixados e fontes utilizáveis",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "Aceito; a saída já é JSON (reservado para o modo humano)",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Aceito por uniformidade e ignorado: o diagnóstico é da instalação, não do projeto",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "live",
+          "help": "Testar buscas reais/refresh; pode consumir quota de API",
+          "nargs": 0,
+          "option_strings": [
+            "--live"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "environment": {
+      "help": "Listar os ambientes que vêm com o getbrolls (pontes oficiais, hoje o HyperFrames): versão, procedência e estado, sem rodar código delas",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "list"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "list: as pontes de ambiente desta instalação, com versão, sha256 do pin e estado",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        }
+      ]
+    },
+    "export": {
+      "help": "Transformar o roteiro revisado num projeto de edição por um exporter de plugin de terceiros, numa pasta nova em exports/",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "to",
+          "help": "Exporter de destino, de um plugin de terceiros habilitado (ex.: meu_exporter)",
+          "nargs": null,
+          "option_strings": [
+            "--to"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "dry_run",
+          "help": "Mostrar a pasta, os arquivos e a mídia que o export gravaria, sem gravar nada",
+          "nargs": 0,
+          "option_strings": [
+            "--dry-run"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "fetch": {
+      "help": "Produzir o corte final aprovado e permitido (broll/ no layout 1, brolls/clips/ no 0)",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "candidate",
+          "help": "ID do candidato retornado por search/resolve",
+          "nargs": null,
+          "option_strings": [
+            "--candidate"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "reacquire",
+          "help": "Rota de plugin cuja licença já foi consumida e cujo arquivo sumiu do cache: roda a rota de novo (nova licença/cota), só com o ok da pessoa",
+          "nargs": 0,
+          "option_strings": [
+            "--reacquire"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "import-review": {
+      "help": "Importar o JSON de decisões exportado pelo Storyboard",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "file",
+          "help": "JSON de decisões; sem esta flag usa o mais recente de brolls/reviews/",
+          "nargs": null,
+          "option_strings": [
+            "--file"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "by",
+          "help": "Nome de quem revisou e assinou as decisões",
+          "nargs": null,
+          "option_strings": [
+            "--by"
+          ],
+          "required": true
+        }
+      ]
+    },
+    "init": {
+      "help": "Criar um projeto novo de layout 1: project.json, aroll/, assets/, broll/ e analysis/ (--recipe: a partir de uma receita do cliente)",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto novo (ou --client e --slug: <pasta do cliente>/projetos/<slug>/)",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "client",
+          "help": "Slug do cliente registrado do projeto (ex.: cliente-exemplo); obrigatório com --recipe",
+          "nargs": null,
+          "option_strings": [
+            "--client"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "slug",
+          "help": "Slug do projeto novo; com --client, ele nasce em <pasta do cliente>/projetos/<slug>/ (no lugar de --project)",
+          "nargs": null,
+          "option_strings": [
+            "--slug"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "recipe",
+          "help": "Criar o projeto da receita do cliente --client: <slug>[@N], <cliente>.<slug>[@N] ou cat:getbrolls/recipe/<cliente>.<slug>@<N> (sem @N, a última versão)",
+          "nargs": null,
+          "option_strings": [
+            "--recipe"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "old_template",
+          "help": "==SUPPRESS==",
+          "nargs": null,
+          "option_strings": [
+            "--template"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "tema",
+          "help": "Tema do ROTEIRO.md criado da receita (obrigatório com --recipe)",
+          "nargs": null,
+          "option_strings": [
+            "--tema"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "canvas",
+          "help": "Tamanho da tela em pixels, LARGURAxALTURA (ex.: 1080x1920)",
+          "nargs": null,
+          "option_strings": [
+            "--canvas"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "fps",
+          "help": "Quadros por segundo: inteiro (30) ou fração (30000/1001)",
+          "nargs": null,
+          "option_strings": [
+            "--fps"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "init-brief": {
+      "help": "Criar um BRIEF.md editável com o plano deste vídeo",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "init-rules": {
+      "help": "Criar um RULES.md editável no projeto (--format muda o formato-alvo)",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "per_item_evidence",
+            "user_declaration"
+          ],
+          "default": null,
+          "dest": "mode",
+          "help": "Modo de direitos gravado no bloco JSON; padrão per_item_evidence",
+          "nargs": null,
+          "option_strings": [
+            "--mode"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "responsible",
+          "help": "Nome de quem assume a responsabilidade no modo user_declaration",
+          "nargs": null,
+          "option_strings": [
+            "--responsible"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "declaration",
+          "help": "Texto literal da declaração de responsabilidade do usuário",
+          "nargs": null,
+          "option_strings": [
+            "--declaration"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "horizontal",
+            "native",
+            "reels"
+          ],
+          "default": null,
+          "dest": "video_format",
+          "help": "Formato-alvo gravado em video_format; regravar exige --force",
+          "nargs": null,
+          "option_strings": [
+            "--format"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "force",
+          "help": "Regravar o RULES.md existente com as escolhas informadas",
+          "nargs": 0,
+          "option_strings": [
+            "--force"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "inspect": {
+      "help": "Analisar a fonte (duração, capítulos, legendas) antes de coletar",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "candidate",
+          "help": "ID do candidato já registrado; grava só media.duration_s",
+          "nargs": null,
+          "option_strings": [
+            "--candidate"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "url",
+          "help": "URL pública da fonte, sem registrar candidato",
+          "nargs": null,
+          "option_strings": [
+            "--url"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "query",
+          "help": "Fala ou alvo do trecho; pontua as janelas candidatas",
+          "nargs": null,
+          "option_strings": [
+            "--query"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": 3,
+          "dest": "max_windows",
+          "help": "Quantas janelas candidatas devolver, 1–20 (padrão 3)",
+          "nargs": null,
+          "option_strings": [
+            "--max-windows"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "learn": {
+      "help": "Guardar busca, preferência ou trecho útil na biblioteca entre projetos",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "query",
+          "help": "Busca real que você fez, como digitada na fonte",
+          "nargs": null,
+          "option_strings": [
+            "--query"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "provider",
+          "help": "Fonte onde essa busca rodou (exige --query)",
+          "nargs": null,
+          "option_strings": [
+            "--provider"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "hit",
+            "miss"
+          ],
+          "default": null,
+          "dest": "outcome",
+          "help": "hit: a busca rendeu material usável; miss: não rendeu (exige --query)",
+          "nargs": null,
+          "option_strings": [
+            "--outcome"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "preference",
+          "help": "Preferência editorial dita pela pessoa, literal",
+          "nargs": null,
+          "option_strings": [
+            "--preference"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "from_candidate",
+          "help": "ID do candidato já memorizado com `remember`, guardado como ponteiro",
+          "nargs": null,
+          "option_strings": [
+            "--from-candidate"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "shot",
+          "help": "Beat em que esse trecho foi usado",
+          "nargs": null,
+          "option_strings": [
+            "--shot"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "note",
+          "help": "Observação livre, gravada em notes/<sha>.md",
+          "nargs": null,
+          "option_strings": [
+            "--note"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "by",
+          "help": "Nome de quem disse a preferência",
+          "nargs": null,
+          "option_strings": [
+            "--by"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "library": {
+      "help": "Consultar a biblioteca entre projetos antes de sair buscando",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "search",
+          "help": "Termo procurado entre assets, buscas e preferências guardadas",
+          "nargs": null,
+          "option_strings": [
+            "--search"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": 5,
+          "dest": "limit",
+          "help": "Máximo de resultados por tipo, 1–20 (padrão 5)",
+          "nargs": null,
+          "option_strings": [
+            "--limit"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "migrate": {
+      "help": "Adotar o layout 1 num projeto antigo: só acrescenta o project.json, sem mover nada (--action plan mostra antes; apply grava)",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "apply",
+            "plan"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "plan: mostra o project.json que seria gravado, sem gravar; apply: grava",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "client",
+          "help": "Slug do cliente (padrão: o cliente do frontmatter do ROTEIRO.md, se houver)",
+          "nargs": null,
+          "option_strings": [
+            "--client"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "permit": {
+      "help": "Registrar as condições reais de uso do trecho antes da coleta",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "candidate",
+          "help": "ID do candidato retornado por search/resolve",
+          "nargs": null,
+          "option_strings": [
+            "--candidate"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "preset",
+          "help": "Condições genéricas da fonte, sempre com o pedido de conferir a página original. Nomes embutidos: commons, nasa, pexels, pixabay, youtube; ou o nome de um preset de plugin habilitado.",
+          "nargs": null,
+          "option_strings": [
+            "--preset"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "evidence",
+          "help": "Evidência real fornecida ou verificada",
+          "nargs": null,
+          "option_strings": [
+            "--evidence"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "declaration",
+          "help": "Registrar declaração que o usuário preencheu em RULES.md",
+          "nargs": 0,
+          "option_strings": [
+            "--declaration"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "declared_by",
+          "help": "Nome de quem declarou a responsabilidade pelo uso, dito no chat",
+          "nargs": null,
+          "option_strings": [
+            "--declared-by"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "declaration_text",
+          "help": "Frase literal da declaração de responsabilidade, com 20 caracteres ou mais",
+          "nargs": null,
+          "option_strings": [
+            "--declaration-text"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "plugins": {
+      "help": "Listar, instalar (de pasta, git ou marketplace), atualizar, remover, criar, habilitar, desabilitar ou validar plugins do SDK ($GB_HOME/plugins, padrão ~/.getbrolls/plugins), procurar nos marketplaces e gerenciá-los",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "check",
+            "disable",
+            "enable",
+            "install",
+            "list",
+            "marketplace-add",
+            "marketplace-list",
+            "marketplace-remove",
+            "marketplace-update",
+            "new",
+            "remove",
+            "search",
+            "update"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "list: inventário sem executar código; enable/disable: liga/desliga por id; check: valida uma pasta; install/update: traz de pasta ou git, em dois passos; remove: tira a pasta e o estado, em dois passos; new: gera um plugin mínimo; marketplace-add/-list/-remove/-update: índices de plugins fixados por commit; search: procura nos índices em cache, sem rede",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "id",
+          "help": "Id do plugin (enable/disable/update/remove/new); install: <id>@<marketplace> instala pelo índice",
+          "nargs": null,
+          "option_strings": [
+            "--id"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "source",
+          "help": "Pasta local ou URL git (https:// ou git@) do plugin a instalar (install) ou do repositório do marketplace (marketplace-add)",
+          "nargs": null,
+          "option_strings": [
+            "--source"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "marketplace",
+          "help": "Nome do marketplace (marketplace-remove; marketplace-update e search, que sem ele usam todos)",
+          "nargs": null,
+          "option_strings": [
+            "--marketplace"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "query",
+          "help": "search: trecho do id, da descrição ou do tipo de extensão a procurar",
+          "nargs": null,
+          "option_strings": [
+            "--query"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "all",
+          "help": "update: prévia das atualizações de todos os plugins instalados por marketplace, com o comando de cada um (só prévia; confirme por id)",
+          "nargs": 0,
+          "option_strings": [
+            "--all"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "commit",
+          "help": "install/update: sha completo (40 hex) do commit a instalar; sem ele, a ref é resolvida na origem (update com --commit volta a um commit anterior); marketplace-add/-update: commit do índice",
+          "nargs": null,
+          "option_strings": [
+            "--commit"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "ref",
+          "help": "install/marketplace-add: branch, tag ou refs/... a resolver na origem (padrão HEAD); o update resolve a mesma",
+          "nargs": null,
+          "option_strings": [
+            "--ref"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "subdir",
+          "help": "install: pasta do plugin dentro do repositório git (ex.: plugins/demo)",
+          "nargs": null,
+          "option_strings": [
+            "--subdir"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "allow_rollback",
+          "help": "marketplace-update: aceita fixar um commit do índice que não descende do fixado hoje (volta atrás ou história reescrita)",
+          "nargs": 0,
+          "option_strings": [
+            "--allow-rollback"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "path",
+          "help": "check: pasta do plugin a validar (executa o register()); new: pasta onde criar o plugin",
+          "nargs": null,
+          "option_strings": [
+            "--path"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "command",
+            "exporter",
+            "provider",
+            "route"
+          ],
+          "default": null,
+          "dest": "kind",
+          "help": "Tipo do plugin gerado por new: fonte, fonte com rota de download, comando ou exportador",
+          "nargs": null,
+          "option_strings": [
+            "--kind"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "yes",
+          "help": "Confirma enable/install/update/remove depois de mostrar manifesto, permissões e origem (ou o que sai) à pessoa",
+          "nargs": 0,
+          "option_strings": [
+            "--yes"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "expect",
+          "help": "sha256 mostrado na prévia (sem --yes) de install/update e do enable de um plugin cujo conteúdo mudou desde o pin (suspenso ou desligado); obrigatório junto com --yes, para confirmar que o conteúdo não mudou desde a prévia",
+          "nargs": null,
+          "option_strings": [
+            "--expect"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "preview": {
+      "help": "Gerar prévia (GIF/contact sheet) do intervalo escolhido",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "candidate",
+          "help": "ID do candidato retornado por search/resolve",
+          "nargs": null,
+          "option_strings": [
+            "--candidate"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "start",
+          "help": "Início do trecho na origem, em segundos",
+          "nargs": null,
+          "option_strings": [
+            "--start"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "end",
+          "help": "Fim do trecho na origem, em segundos",
+          "nargs": null,
+          "option_strings": [
+            "--end"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "scan",
+          "help": "Varrer o vídeo inteiro num contact sheet de baixa resolução, sem definir intervalo",
+          "nargs": 0,
+          "option_strings": [
+            "--scan"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "reference_only",
+          "help": "Gerar apenas referência estática, sem obter trecho remoto",
+          "nargs": 0,
+          "option_strings": [
+            "--reference-only"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "narration",
+          "help": "Fala exata do roteiro",
+          "nargs": null,
+          "option_strings": [
+            "--narration"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "reason",
+          "help": "Decisão de coleta desta fonte",
+          "nargs": null,
+          "option_strings": [
+            "--reason"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "profile": {
+      "help": "Mostrar o perfil getbrolls.toml em vigor (valor e origem de cada campo) ou confiar/desconfiar dele",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "Aceito; a saída já é JSON (reservado para o modo humano)",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "show",
+            "trust",
+            "untrust"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "show: valor e origem de cada campo; trust: confiar (prévia, depois --yes --expect); untrust: desfazer",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "path",
+          "help": "Caminho do getbrolls.toml (padrão: o descoberto)",
+          "nargs": null,
+          "option_strings": [
+            "--path"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta de onde a busca pelo getbrolls.toml começa (antes da pasta atual)",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "yes",
+          "help": "trust: confirma depois de mostrar a prévia à pessoa",
+          "nargs": 0,
+          "option_strings": [
+            "--yes"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "expect",
+          "help": "trust: sha256 mostrado na prévia; obrigatório junto com --yes",
+          "nargs": null,
+          "option_strings": [
+            "--expect"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "legacy",
+          "help": "==SUPPRESS==",
+          "nargs": "*",
+          "option_strings": [],
+          "required": null
+        }
+      ]
+    },
+    "providers": {
+      "help": "Listar fontes disponíveis, transporte e chaves configuradas",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "queue": {
+      "help": "Enfileirar URLs sociais e ditar o ritmo do lote (add, next, mark, status, resume)",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "add",
+            "mark",
+            "next",
+            "resume",
+            "status"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "add: enfileirar URLs; next: próximo item ou tempo de espera; mark: registrar resultado; status: contagens, cooldown e paradas; resume: com --provider, --by, --phrase e --expect, limpa a parada de um provedor depois que a pessoa confirmou, no chat, que o acesso voltou",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "instagram",
+            "tiktok",
+            "youtube"
+          ],
+          "default": null,
+          "dest": "provider",
+          "help": "Fonte das URLs em add; em next, limita a fila a essa fonte; em resume, o provedor a retomar",
+          "nargs": null,
+          "option_strings": [
+            "--provider"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "urls",
+          "help": "URLs públicas a enfileirar (add); repetidas são ignoradas",
+          "nargs": "*",
+          "option_strings": [],
+          "required": null
+        },
+        {
+          "action": "_AppendAction",
+          "choices": null,
+          "default": null,
+          "dest": "url",
+          "help": "URL pública a enfileirar (add); pode repetir",
+          "nargs": null,
+          "option_strings": [
+            "--url"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "id",
+          "help": "ID do item retornado por next (mark)",
+          "nargs": null,
+          "option_strings": [
+            "--id"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "done",
+          "help": "mark: item coletado com sucesso; zera o cooldown",
+          "nargs": 0,
+          "option_strings": [
+            "--done"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "failed",
+          "help": "mark: item falhou; motivo com 429, 'rate limit', 'too many requests' ou 'limite de requisições' abre cooldown (ritmo); motivo com login, challenge, captcha, 401/403 ou as mensagens de bloqueio da própria skill (sessão de acesso, IP bloqueado) para a fila do provedor, sem cooldown e sem horário para voltar",
+          "nargs": 0,
+          "option_strings": [
+            "--failed"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "skipped",
+          "help": "mark: item pulado sem tentar",
+          "nargs": 0,
+          "option_strings": [
+            "--skipped"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "reason",
+          "help": "Motivo real registrado no item (mark)",
+          "nargs": null,
+          "option_strings": [
+            "--reason"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "by",
+          "help": "resume: nome de quem confirmou, no chat, que o acesso voltou",
+          "nargs": null,
+          "option_strings": [
+            "--by"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "statement",
+          "help": "resume: frase exata dita por essa pessoa, registrada literalmente",
+          "nargs": null,
+          "option_strings": [
+            "--phrase"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "expect",
+          "help": "resume: o instante `at` da parada que a pessoa viu (status: stopped.at)",
+          "nargs": null,
+          "option_strings": [
+            "--expect"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "recipe": {
+      "help": "Listar e mostrar as receitas seladas dos clientes, conferindo a integridade de cada arquivo (só leem)",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "list",
+            "show"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "list: as versões das receitas dos clientes registrados; show: uma versão, com o sha256 de cada arquivo",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "ref",
+          "help": "Receita: <cliente>.<slug>[@N] ou cat:getbrolls/recipe/<cliente>.<slug>@<N>; sem @N, a última (show)",
+          "nargs": null,
+          "option_strings": [
+            "--ref"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "references": {
+      "help": "Consultar as referências memorizadas do projeto",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "reject": {
+      "help": "Marcar candidatos como rejeitados e invalidar suas revisões (--candidate repetível)",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_AppendAction",
+          "choices": null,
+          "default": null,
+          "dest": "candidate",
+          "help": "ID do candidato a rejeitar; repita a flag para rejeitar vários",
+          "nargs": null,
+          "option_strings": [
+            "--candidate"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "reason",
+          "help": "Por que este material foi descartado; fica gravado no candidato",
+          "nargs": null,
+          "option_strings": [
+            "--reason"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "remember": {
+      "help": "Registrar referência aprovada ou rejeitada na memória do projeto",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "candidate",
+          "help": "ID do candidato retornado por search/resolve",
+          "nargs": null,
+          "option_strings": [
+            "--candidate"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "approved",
+            "rejected"
+          ],
+          "default": null,
+          "dest": "decision",
+          "help": "Decisão humana registrada para esta referência",
+          "nargs": null,
+          "option_strings": [
+            "--decision"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "reason",
+          "help": "Motivo real da decisão registrada",
+          "nargs": null,
+          "option_strings": [
+            "--reason"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "by",
+          "help": "Nome de quem decidiu",
+          "nargs": null,
+          "option_strings": [
+            "--by"
+          ],
+          "required": true
+        }
+      ]
+    },
+    "resolve": {
+      "help": "Registrar um candidato a partir de URL pública ou arquivo local",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "context_image",
+          "help": "Print opcional da pessoa; permanece estático",
+          "nargs": null,
+          "option_strings": [
+            "--context-image"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "full_preview_file",
+          "help": "Composição pronta contendo apenas este insert, usada em GB_GIF_SCOPE=full",
+          "nargs": null,
+          "option_strings": [
+            "--full-preview-file"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "image",
+            "news_screenshot",
+            "video",
+            "web_screenshot"
+          ],
+          "default": null,
+          "dest": "asset_type",
+          "help": "Tipo do arquivo local; padrão é inferido pela extensão",
+          "nargs": null,
+          "option_strings": [
+            "--asset-type"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "title",
+          "help": "Título do asset/notícia",
+          "nargs": null,
+          "option_strings": [
+            "--title"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "captured_at",
+          "help": "Data da captura, ISO 8601",
+          "nargs": null,
+          "option_strings": [
+            "--captured-at"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "source_url",
+          "help": "URL pública original do arquivo local",
+          "nargs": null,
+          "option_strings": [
+            "--source-url"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "creator",
+          "help": "Autor informado da fonte",
+          "nargs": null,
+          "option_strings": [
+            "--creator"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "referer",
+          "help": "Página HTTPS de onde veio o link direto .m3u8/.mp4 (vai como referer ao yt-dlp); só com --url",
+          "nargs": null,
+          "option_strings": [
+            "--referer"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "shot",
+          "help": "Identificador único do insert, ex.: insert-02",
+          "nargs": null,
+          "option_strings": [
+            "--shot"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "illustrative",
+            "literal"
+          ],
+          "default": "literal",
+          "dest": "intent",
+          "help": "literal: entidade nomeada; illustrative: ideia genérica",
+          "nargs": null,
+          "option_strings": [
+            "--intent"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "url",
+          "help": "URL pública da fonte (YouTube, Instagram, TikTok, Wikimedia Commons, NASA)",
+          "nargs": null,
+          "option_strings": [
+            "--url"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "file",
+          "help": "Arquivo local já autorizado para importação",
+          "nargs": null,
+          "option_strings": [
+            "--file"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "review": {
+      "help": "Gerar o Storyboard local em brolls/review.html",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "roteiro": {
+      "help": "Criar, validar, revisar e sincronizar o ROTEIRO.md com os beats do BRIEF.md",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "check",
+            "new",
+            "plan",
+            "review",
+            "sync"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "new: esqueleto; check: valida e mostra o plano de cena; review: registra a revisão humana; plan: mostra o sync sem gravar; sync: grava ids e beats",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "reels"
+          ],
+          "default": null,
+          "dest": "genero",
+          "help": "Gênero do conteúdo (new)",
+          "nargs": null,
+          "option_strings": [
+            "--genero"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "tema",
+          "help": "Tema do vídeo numa linha (new)",
+          "nargs": null,
+          "option_strings": [
+            "--tema"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "force",
+          "help": "Recomeçar do esqueleto; o atual vira ROTEIRO.md.bak, ou uma cópia com data se ele já existe (new)",
+          "nargs": 0,
+          "option_strings": [
+            "--force"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "by",
+          "help": "Nome de quem revisou o roteiro (review)",
+          "nargs": null,
+          "option_strings": [
+            "--by"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "chat"
+          ],
+          "default": "chat",
+          "dest": "channel",
+          "help": "Por onde a revisão chegou (review)",
+          "nargs": null,
+          "option_strings": [
+            "--channel"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "statement",
+          "help": "Frase exata dita por quem revisou (review)",
+          "nargs": null,
+          "option_strings": [
+            "--statement"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "expect",
+          "help": "review.sha256 que check e plan mostram, da versão que a pessoa viu; obrigatório no review, que recusa se o roteiro mudou desde então (review)",
+          "nargs": null,
+          "option_strings": [
+            "--expect"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_target_change",
+          "help": "Aceitar que aprovações de beats com alvo novo voltem a pendente (sync)",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-target-change"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "rules": {
+      "help": "Mostrar as regras editoriais em vigor no projeto",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "search": {
+      "help": "Pesquisar candidatos numa fonte e registrá-los no projeto (--shot liga ao beat; --dry-run não grava)",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": "auto",
+          "dest": "provider",
+          "help": "Fonte: youtube, pexels, pixabay, commons, nasa, uma fonte de plugin habilitado ou auto (padrão); rode `providers` para listar as disponíveis, inclusive as de plugin",
+          "nargs": null,
+          "option_strings": [
+            "--provider"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "query",
+          "help": "Termos da busca na fonte",
+          "nargs": null,
+          "option_strings": [
+            "--query"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": 8,
+          "dest": "limit",
+          "help": "Máximo de candidatos, 1–50 (padrão 8)",
+          "nargs": null,
+          "option_strings": [
+            "--limit"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "illustrative",
+            "literal"
+          ],
+          "default": "literal",
+          "dest": "intent",
+          "help": "literal: entidade nomeada; illustrative: ideia genérica",
+          "nargs": null,
+          "option_strings": [
+            "--intent"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "any",
+            "image",
+            "video"
+          ],
+          "default": "any",
+          "dest": "media",
+          "help": "Tipo de arquivo na fonte: image, video ou any (padrão); só NASA e Commons têm os dois",
+          "nargs": null,
+          "option_strings": [
+            "--media"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "shot",
+          "help": "Beat do BRIEF.md a que estes candidatos pertencem, ex.: abertura",
+          "nargs": null,
+          "option_strings": [
+            "--shot"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "dry_run",
+          "help": "Listar o que a fonte devolveu sem registrar nada no projeto",
+          "nargs": 0,
+          "option_strings": [
+            "--dry-run"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "serve": {
+      "help": "Servir brolls/review.html em 127.0.0.1 para abrir o Storyboard no navegador",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "background",
+          "help": "Subir o servidor num processo solto e devolver a URL na hora (PID em brolls/.serve.pid)",
+          "nargs": 0,
+          "option_strings": [
+            "--background"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "stop",
+          "help": "Encerrar o servidor de fundo pelo PID gravado em brolls/.serve.pid",
+          "nargs": 0,
+          "option_strings": [
+            "--stop"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "port",
+          "help": "Porta local para o servidor (padrão 8767; se ocupada, usa uma porta livre)",
+          "nargs": null,
+          "option_strings": [
+            "--port"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "setup": {
+      "help": "Instalar o runtime da instalação (yt-dlp numa venv e Playwright via npm) em $GB_HOME/runtime; --check só confere; --where mostra as pastas; FFmpeg e Node só são verificados",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "Aceito; a saída já é JSON (reservado para o modo humano)",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "check",
+          "help": "Só conferir, sem instalar nada",
+          "nargs": 0,
+          "option_strings": [
+            "--check"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "ytdlp"
+          ],
+          "default": null,
+          "dest": "upgrade",
+          "help": "Atualizar o yt-dlp do runtime gerenciado além da versão fixada",
+          "nargs": null,
+          "option_strings": [
+            "--upgrade"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "all",
+            "tools",
+            "venv"
+          ],
+          "default": null,
+          "dest": "where",
+          "help": "Mostrar onde fica cada parte do runtime (JSON), sem instalar; sem valor, todas",
+          "nargs": "?",
+          "option_strings": [
+            "--where"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "status": {
+      "help": "Resumir onde o projeto está por etapa, sem alterar arquivos",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        }
+      ]
+    },
+    "template": {
+      "help": "Comando antigo das receitas (agora recipe): freeze, list e show só dizem o comando novo",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": [
+            "freeze",
+            "list",
+            "show"
+          ],
+          "default": null,
+          "dest": "action",
+          "help": "Ações antigas, que agora só dizem o comando novo: freeze, list e show → recipe",
+          "nargs": null,
+          "option_strings": [
+            "--action"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "source",
+          "help": "==SUPPRESS==",
+          "nargs": null,
+          "option_strings": [
+            "--from"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "slug",
+          "help": "==SUPPRESS==",
+          "nargs": null,
+          "option_strings": [
+            "--slug"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "client",
+          "help": "==SUPPRESS==",
+          "nargs": null,
+          "option_strings": [
+            "--client"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "ref",
+          "help": "==SUPPRESS==",
+          "nargs": null,
+          "option_strings": [
+            "--ref"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "title",
+          "help": "==SUPPRESS==",
+          "nargs": null,
+          "option_strings": [
+            "--title"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "by",
+          "help": "==SUPPRESS==",
+          "nargs": null,
+          "option_strings": [
+            "--by"
+          ],
+          "required": false
+        },
+        {
+          "action": "_AppendAction",
+          "choices": null,
+          "default": null,
+          "dest": "engine_ref",
+          "help": "==SUPPRESS==",
+          "nargs": null,
+          "option_strings": [
+            "--engine-ref"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "verify": {
+      "help": "Conferir integridade e decodificação dos arquivos coletados",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que guarda brolls/, fora da instalação da skill",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": true
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "confirm_format_change",
+          "help": "Confirmar que aprovações já dadas podem ser invalidadas pela mudança de formato",
+          "nargs": 0,
+          "option_strings": [
+            "--confirm-format-change"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "x": {
+      "help": "Rodar um comando de plugin habilitado (x --list mostra quais existem); só lê o projeto",
+      "options": [
+        {
+          "action": "_HelpAction",
+          "choices": null,
+          "default": "==SUPPRESS==",
+          "dest": "help",
+          "help": "mostra esta ajuda e sai",
+          "nargs": 0,
+          "option_strings": [
+            "--help",
+            "-h"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "json",
+          "help": "==SUPPRESS==",
+          "nargs": 0,
+          "option_strings": [
+            "--json"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "plugin_id",
+          "help": "Id do plugin dono do comando",
+          "nargs": "?",
+          "option_strings": [],
+          "required": null
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "plugin_command",
+          "help": "Nome do comando do plugin",
+          "nargs": "?",
+          "option_strings": [],
+          "required": null
+        },
+        {
+          "action": "_StoreTrueAction",
+          "choices": null,
+          "default": false,
+          "dest": "list",
+          "help": "Listar os comandos dos plugins habilitados, sem rodar",
+          "nargs": 0,
+          "option_strings": [
+            "--list"
+          ],
+          "required": false
+        },
+        {
+          "action": "_StoreAction",
+          "choices": null,
+          "default": null,
+          "dest": "project",
+          "help": "Pasta do projeto que o comando pode ler (somente leitura)",
+          "nargs": null,
+          "option_strings": [
+            "--project"
+          ],
+          "required": false
+        },
+        {
+          "action": "_AppendAction",
+          "choices": null,
+          "default": null,
+          "dest": "arg",
+          "help": "Argumento do comando; repita a flag para passar vários",
+          "nargs": null,
+          "option_strings": [
+            "--arg"
+          ],
+          "required": false
+        }
+      ]
+    }
+  },
+  "top_level": [
+    {
+      "action": "_HelpAction",
+      "choices": null,
+      "default": "==SUPPRESS==",
+      "dest": "help",
+      "help": "mostra esta ajuda e sai",
+      "nargs": 0,
+      "option_strings": [
+        "--help",
+        "-h"
+      ],
+      "required": false
+    },
+    {
+      "action": "_StoreAction",
+      "choices": null,
+      "default": null,
+      "dest": "env_file",
+      "help": "Arquivo .env explícito; sem ele: GB_ENV_FILE, depois o .env do checkout, depois $GB_HOME/.env",
+      "nargs": null,
+      "option_strings": [
+        "--env-file"
+      ],
+      "required": false
+    },
+    {
+      "action": "_StoreAction",
+      "choices": null,
+      "default": null,
+      "dest": "profile",
+      "help": "getbrolls.toml explícito, ou `off` para não usar perfil; sem ela: GB_PROFILE, depois getbrolls.toml a partir de --project e da pasta atual",
+      "nargs": null,
+      "option_strings": [
+        "--profile"
+      ],
+      "required": false
+    },
+    {
+      "action": "_VersionAction",
+      "choices": null,
+      "default": "==SUPPRESS==",
+      "dest": "version",
+      "help": "Mostrar a versão instalada, o Python e a origem dos dados (wheel ou checkout) e sair",
+      "nargs": 0,
+      "option_strings": [
+        "--version"
+      ],
+      "required": false
+    }
+  ]
+}

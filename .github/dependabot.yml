@@ -1,0 +1,49 @@
+version: 2
+updates:
+  # requirements.txt is compiled from requirements.in by `uv pip compile --universal --generate-hashes
+  # --python-version 3.11` (header of the file; recipe in CONTRIBUTING.md). The `pip` ecosystem
+  # recompiles it with pip-compile, which has no `--universal` (the PyPy-only entries brotlicffi,
+  # cffi and pycparser disappear) and keeps extras (`yt-dlp==` becomes `yt-dlp[default]==`), so
+  # its PRs fail the hashed install tests. The `uv` ecosystem reads the same requirements.in/.txt
+  # pair, reruns `uv pip compile` with the options found in requirements.txt (`--universal`,
+  # `--generate-hashes`, `--python-version`), keeps the leading comment block and updates the
+  # hashed requirements-bootstrap.txt/requirements-dev.txt pins as before. Security updates are
+  # supported for `uv` as for `pip` (GitHub docs, "Dependabot supported ecosystems and
+  # repositories"). Only one Python ecosystem is listed: two would open duplicate PRs.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python-runtime:
+        patterns: ["*"]
+    ignore:
+      # ruff/pylint/astroid mudam a régua de lint sem ninguém tocar o repositório
+      # (o `extend-select` do ruff segue o conjunto padrão, que cresce nos minors 0.x);
+      # bump manual, junto com uma re-baseline das supressões existentes, para que
+      # regra nova nunca trave um PR de runtime do grupo acima.
+      - dependency-name: ruff
+      - dependency-name: pylint
+      - dependency-name: astroid
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      # Fixado de propósito (CHANGELOG 2.6.0, Limites); sobe à mão, junto com docs/GUIDE.md
+      # e os testes que citam a versão.
+      - dependency-name: "@playwright/cli"
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    # Um PR só para todas as Actions: codeql-action/init e /analyze precisam da mesma versão.
+    groups:
+      github-actions:
+        patterns: ["*"]

@@ -1,0 +1,34 @@
+# Local settings, footage and generated projects
+.env
+.env.*
+!.env.example
+!.env.example.pt-BR
+__pycache__/
+*.py[cod]
+.DS_Store
+brolls/
+*.mp4
+*.mov
+*.gif
+*.zip
+.venv/
+node_modules/
+.getbrolls-sources/
+*.conf
+.playwright-cli/
+
+.tools/
+
+# Internal working material (planning, discovery, agent state, editor config).
+# Never part of the public skill.
+docs/superpowers/
+docs/discovery/
+docs/internal
+.superpowers/
+.claude/
+.agents/
+.codex/
+.playwright-cli/
+# Ouro da 2.5: projeto de layout 0 e mídia de teste versionados de propósito.
+!tests/fixtures/golden_v25/**
+tests/fixtures/golden_v25/**/.DS_Store

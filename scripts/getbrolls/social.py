@@ -1,0 +1,713 @@
+"""Social acquisition using the existing yt-dlp/FFmpeg engine, without API keys."""
+
+# pylint: disable=invalid-name,missing-function-docstring,global-statement,too-many-locals,cyclic-import
+# Legado: ocorrências pré-existentes (corpo idêntico ao código anterior à 2.6.0); `_sleep_logged`
+# é módulo-privado (guarda de log único por processo), não uma constante real. O
+# ciclo (getbrolls.providers <-> getbrolls.social) já existia antes da 2.6.0: quem
+# quebra o ciclo em tempo de execução é o import tardio em `providers._youtube`.
+
+import contextlib
+import contextvars
+import hashlib
+import json
+import logging
+import math
+import os
+import re
+import shutil
+import subprocess
+import time
+from pathlib import Path
+from typing import Any
+
+from . import _paths, effects, egress_proxy, labels, logs
+from .config import executable_override, venv_override
+from .errors import PrerequisiteError
+from .http import ProviderError, public_url
+from .runtime import REDACT_LIMIT, record_warning, redact, stderr_tail
+
+_log = logs.get("social")
+
+# O proxy de saída conferida (`egress_proxy`) desta chamada ao yt-dlp, quando a fonte é um link aberto, e a
+# pasta vazia que o yt-dlp recebe como `--ffmpeg-location`. Uma variável de contexto, não um argumento de
+# `run`: quem troca `run` nos testes segue com a mesma assinatura.
+_EGRESS: contextvars.ContextVar[tuple[str, str] | None] = contextvars.ContextVar("getbrolls_egress", default=None)
+
+# O proxy só vê HTTP e `CONNECT`. Os protocolos `rtmp`, `rtmps`, `ftp` ignoram `http_proxy`/`https_proxy`, e o
+# HLS do FFmpeg aceita segmento e chave `httpproxy://HOST:PORTA/...`, que abre TCP direto em `HOST:PORTA`.
+# Por isso, na rota aberta, o seletor só aceita formato `https` ou HLS (`HTTP_PROTOCOL_FILTER`, ancorado nas duas
+# pontas com `\A` e `\Z`: o `~=` do yt-dlp é `re.search`, e `$` casaria antes de um `\n` final; nunca `http` em
+# claro nem segmento DASH, que a rota não usa), sem juntar
+# faixas, e o yt-dlp roda sem FFmpeg nenhum: baixa com o downloader nativo (cada fragmento e a chave passam
+# pelo proxy, e esquema desconhecido falha). O corte é depois, local (`cut_local`), com `LOCAL_PROTOCOLS`
+# e `LOCAL_FORMATS`: o FFmpeg não abre rede nem lê playlist.
+HTTP_PROTOCOL_FILTER = r"[protocol~='\A(https|m3u8_native|m3u8)\Z']"
+OPEN_WEB_FORMAT = "/".join(
+    part + HTTP_PROTOCOL_FILTER
+    for part in ("b[height<=1080][ext=mp4]", "b[height<=1080]", "b", "bv*[height<=1080]", "bv*")
+)
+LOCAL_PROTOCOLS = "file"
+LOCAL_FORMATS = "mov,mp4,m4a,3gp,3g2,mj2,mpegts,matroska,webm"
+# O link aberto baixa o vídeo inteiro antes do corte: mais prazo que a chamada comum do yt-dlp.
+OPEN_WEB_TIMEOUT_S = 900
+CUT_SEEK_MARGIN_S = 30.0
+SEGMENT_FORMAT = "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/b"
+
+LAYOUTS = ("Scripts/yt-dlp.exe", "Scripts/yt-dlp", "bin/yt-dlp")
+# Pauses between yt-dlp requests: (--sleep-requests, --sleep-interval, --max-sleep-interval).
+DEFAULT_SLEEP = (1, 3, 8)
+# `ytdlp_sleep` is logged once per process, not once per invocation, to avoid drowning
+# the log in an identical DEBUG line for every one of possibly hundreds of yt-dlp calls.
+_sleep_logged = False
+
+
+def sleep_settings():
+    """GB_YTDLP_SLEEP as "requests,min,max" seconds; defaults keep the source unhurried."""
+    raw = (os.environ.get("GB_YTDLP_SLEEP") or "").strip()
+    if not raw:
+        return DEFAULT_SLEEP
+    parts = raw.split(",")
+    try:
+        values = tuple(int(part.strip()) for part in parts)
+    except ValueError:
+        values = ()
+    bad_count = len(values) != 3  # noqa: PLR2004 - "requests,min,max": exatamente 3 campos
+    if bad_count or any(v < 0 for v in values) or values[1] > values[2]:
+        raise ValueError('GB_YTDLP_SLEEP: use "requests,min,max" em segundos inteiros, com min <= max.')
+    return values
+
+
+class MissingToolError(ProviderError, PrerequisiteError):
+    """Ferramenta externa ausente (yt-dlp): é falha de provedor e falta de pré-requisito ao mesmo tempo."""
+
+
+def _from_checkout():
+    return _paths.origin() == "checkout"
+
+
+def _ytdlp_missing_text():
+    if _from_checkout():
+        return (
+            "yt-dlp ausente: execute bash scripts/install.sh (ou install.ps1) na raiz da skill/plugin "
+            f"({_paths.cli_hint('setup')} faz o mesmo); o runtime fica em $GB_HOME/runtime e sobrevive "
+            f"ao /plugin update. Confira com {_paths.cli_hint('doctor')}."
+        )
+    return f"yt-dlp ausente: {_paths.installer_hint()}. Confira com {_paths.cli_hint('doctor')}."
+
+
+def _tool_not_found_text(name):
+    if _from_checkout():
+        return f"{name} não encontrado: execute bash scripts/install.sh (ou install.ps1) na raiz da skill/plugin."
+    return f"{name} não encontrado: {_paths.installer_hint()}."
+
+
+def _instagram_pairs_command():
+    return "scripts/getbrolls/instagram_pairs.py" if _from_checkout() else "python -P -m getbrolls.instagram_pairs"
+
+
+def local_ytdlp(root=None):
+    pinned = executable_override("GB_YTDLP_PATH")
+    if pinned:
+        return Path(pinned)
+    base = venv_override()
+    explicit = base is not None
+    if not explicit:
+        base = Path(root) / ".venv" if root is not None else _paths.venv_dir().path
+    for relative in LAYOUTS:
+        candidate = base / relative
+        # lenient: tool discovery: try the next yt-dlp layout
+        if candidate.is_file():
+            return candidate
+    if explicit:
+        # Pin explícito é promessa: sem yt-dlp dentro, nada de voltar ao PATH.
+        raise ValueError(
+            f"GB_VENV_PATH: {base} não contém yt-dlp (procurado em "
+            + ", ".join(LAYOUTS)
+            + "). Instale o yt-dlp nessa venv ou remova a variável."
+        )
+    return None
+
+
+def _log_tool_path(source):
+    logs.event(_log, logging.DEBUG, "tool_path", tool="yt-dlp", source=source)
+
+
+def _log_sleep_settings_once(requests, low, high):
+    """`ytdlp_sleep` once per process: every `command()` call would repeat the same line."""
+    global _sleep_logged  # noqa: PLW0603 - module-level once-per-process cache, intentional
+    if _sleep_logged:
+        return
+    _sleep_logged = True
+    logs.event(_log, logging.DEBUG, "ytdlp_sleep", requests=requests, min=low, max=high)
+
+
+def ytdlp_in_use():
+    """O yt-dlp que `command()` usa e de onde veio: `(Path, "env" | "venv" | "path")`.
+
+    Ordem única: o pin `GB_YTDLP_PATH` (`env`), a venv do runtime ou de `GB_VENV_PATH`
+    (`venv`), o `PATH` (`path`); `(None, None)` sem nenhum. Pin quebrado levanta
+    `ValueError`. `doctor` e `setup --check` julgam este mesmo executável.
+    """
+    pinned = executable_override("GB_YTDLP_PATH")
+    if pinned:
+        return Path(pinned), "env"
+    local = local_ytdlp()
+    if local:
+        return Path(local), "venv"
+    found = shutil.which("yt-dlp")
+    return (Path(found), "path") if found else (None, None)
+
+
+def command():
+    exe, source = ytdlp_in_use()
+    if exe is None:
+        raise MissingToolError(_ytdlp_missing_text())
+    exe = str(exe)
+    _log_tool_path(source)
+    requests, low, high = sleep_settings()
+    _log_sleep_settings_once(requests, low, high)
+    # --no-warnings would hide exactly the rate-limit/PO-token/fallback warnings we want to surface.
+    args = [
+        exe,
+        "--ignore-config",
+        "--no-playlist",
+        "--no-progress",
+        "--socket-timeout",
+        "20",
+        "--retries",
+        "1",
+        "--fragment-retries",
+        "1",
+        "--sleep-requests",
+        str(requests),
+        "--sleep-interval",
+        str(low),
+        "--max-sleep-interval",
+        str(high),
+    ]
+    if shutil.which("deno"):
+        args += ["--js-runtimes", "deno"]
+    elif shutil.which("node"):
+        args += ["--js-runtimes", "node"]
+    return args
+
+
+def _with_tail(message, stderr):
+    tail = stderr_tail(stderr)
+    return f"{message}; stderr: {tail}" if tail else message
+
+
+# "login"/"sign in" alone is too broad (matches unrelated text); only these phrases mean auth is required.
+_LOGIN_RE = re.compile(r"sign in to confirm|login required", re.IGNORECASE)
+# Anchored to real HTTP 429 context, not any standalone "429" (e.g. an ffmpeg "fps= 429" counter).
+_RATE_RE = re.compile(r"http error 429|429[:\s]+too many requests|rate.?limit", re.IGNORECASE)
+# "\bremoved\b" alone also matched yt-dlp's own "removed temporary file" cleanup message;
+# require it to describe the video itself, not an unrelated file operation.
+_UNAVAILABLE_RE = re.compile(r"\bprivate\b|\bunavailable\b|\bvideo (?:has been |was )?removed\b", re.IGNORECASE)
+
+
+def _classify_ytdlp_error(exc):
+    stderr = exc.stderr or ""
+    detail = stderr.lower()
+    if _RATE_RE.search(detail):
+        category = "rate_limit"
+        message = "limite de requisições da fonte (429); aguarde e tente de novo"
+    elif "ip address is blocked" in detail:
+        category = "ip_blocked"
+        message = "A fonte bloqueou o IP desta rede para esse post; download não concluído."
+    elif "not available in your country" in detail:
+        category = "geo_block"
+        message = "Vídeo bloqueado geograficamente (geo-block) para esta região."
+    elif "requested format is not available" in detail:
+        category = "format_unavailable"
+        message = "Formato solicitado não está disponível para esta fonte."
+    elif "unsupported url" in detail:
+        category = "unsupported_url"
+        message = "URL não suportada por yt-dlp."
+    elif _LOGIN_RE.search(detail):
+        category = "login_required"
+        message = "A fonte exige uma sessão de acesso. Use o navegador autorizado conforme o guia da plataforma."
+    elif _UNAVAILABLE_RE.search(detail):
+        category = "unavailable"
+        message = "Vídeo indisponível, privado ou removido."
+    else:
+        category = "unknown"
+        message = "yt-dlp não concluiu a extração; confira disponibilidade do post e siga o guia da plataforma."
+    error = ProviderError(_with_tail(message, stderr))
+    # Category returned alongside the error (not attached to it — ProviderError is owned
+    # by http.py) so `run()` can log it as `class=` without re-parsing stderr or changing
+    # the exception's message/type.
+    return error, category
+
+
+def _extract_warnings(stderr):
+    """WARNING lines, with indented continuation lines folded into the warning they wrap."""
+    warnings = []
+    for raw_line in (stderr or "").splitlines():
+        if raw_line.strip().upper().startswith("WARNING"):
+            warnings.append(raw_line.strip())
+        elif raw_line[:1].isspace() and raw_line.strip() and warnings:
+            # An indented line with no "WARNING" prefix of its own is a continuation of
+            # the previous warning (yt-dlp wraps long warnings this way), not a new one.
+            warnings[-1] = f"{warnings[-1]} {raw_line.strip()}"
+    return [labels.for_log(redact(w, limit=None), REDACT_LIMIT) for w in warnings]  # redact and label, then cut
+
+
+def _log_subprocess(op, started, *, status, exit_code):
+    logs.event(
+        _log,
+        logging.INFO if status == "ok" else logging.WARNING,
+        "subprocess",
+        tool="yt-dlp",
+        op=op,
+        ms=round((time.monotonic() - started) * 1000),
+        status=status,
+        exit=exit_code,
+    )
+
+
+def run(arguments, timeout=180, *, op=None):
+    """Run one yt-dlp invocation. `op` is an optional short label (e.g. "search",
+    "metadata") used only for the `event=subprocess` log line; omitting it changes
+    nothing about how the command runs."""
+    egress = _EGRESS.get()
+    # Link aberto: toda conexão do yt-dlp passa pelo proxy que confere o destino, e ele não acha FFmpeg
+    # (a pasta vazia), então nenhum FFmpeg lê playlist ou segmento remoto (`HTTP_PROTOCOL_FILTER`).
+    guarded = ["--proxy", egress[0], "--ffmpeg-location", egress[1]] if egress else []
+    cmd = command() + guarded + arguments
+    # Sem proxy, a chamada de sempre (o ambiente do processo); com ele, o mesmo ambiente apontando para o proxy.
+    env: dict[str, Any] = {"env": egress_proxy.environment(os.environ, egress[0])} if egress else {}
+    started = time.monotonic()
+    try:
+        proc = effects.run(cmd, check=True, timeout=timeout, **effects.TEXT_OUTPUT, **env)
+    except subprocess.TimeoutExpired as exc:
+        _log_subprocess(op, started, status="error", exit_code=None)
+        raise ProviderError(f"yt-dlp excedeu {timeout}s; a fonte pode estar lenta ou bloqueando.") from exc
+    except subprocess.CalledProcessError as exc:
+        classified, category = _classify_ytdlp_error(exc)
+        logs.event(
+            _log,
+            logging.WARNING,
+            "ytdlp_error",
+            **{"class": category},
+            provider="yt-dlp",
+        )
+        _log_subprocess(op, started, status="error", exit_code=exc.returncode)
+        raise classified from exc
+    except FileNotFoundError as exc:
+        _log_subprocess(op, started, status="error", exit_code=None)
+        name = exc.filename or (cmd[0] if cmd else "yt-dlp")
+        raise MissingToolError(_tool_not_found_text(name)) from exc
+    except PermissionError as exc:
+        _log_subprocess(op, started, status="error", exit_code=None)
+        name = exc.filename or (cmd[0] if cmd else "yt-dlp")
+        raise ProviderError(f"Permissão negada ao executar {name}.") from exc
+    except (subprocess.SubprocessError, OSError) as exc:
+        _log_subprocess(op, started, status="error", exit_code=None)
+        raise ProviderError(
+            "yt-dlp não concluiu: confira dependências, disponibilidade do vídeo e sessão exigida "
+            "pela fonte. Para Instagram, use o fluxo navegador → pares CDN descrito em docs/GUIDE.md."
+        ) from exc
+    _log_subprocess(op, started, status="ok", exit_code=proc.returncode)
+    return proc.stdout, _extract_warnings(proc.stderr)
+
+
+def search(query, limit):
+    raw, warnings = run(["--flat-playlist", "--dump-single-json", f"ytsearch{limit}:{query}"], timeout=60, op="search")
+    for w in warnings:
+        record_warning("YTDLP_WARNING", w)
+    try:
+        data = json.loads(raw)
+        return [r for r in data.get("entries", []) if isinstance(r, dict)]
+    except (ValueError, AttributeError):
+        raise ProviderError("yt-dlp retornou metadados inválidos.") from None
+
+
+SUBTITLE_LANGS = ("pt", "en")
+
+
+def _language_from(name):
+    """`probe.pt.vtt` → `pt`; `probe.pt-BR.vtt` → `pt-BR`."""
+    parts = Path(name).name.split(".")
+    # "nome.idioma.vtt": pelo menos 3 partes (ver exemplo acima)
+    return parts[-2] if len(parts) >= 3 else "und"  # noqa: PLR2004
+
+
+# Teto da lista de idiomas na resposta: o YouTube anuncia centenas de traduções
+# automáticas, e despejar tudo isso afoga a informação que interessa.
+MAX_SUBTITLE_LANGS = 10
+
+
+def _write_private(path, text):
+    """Cria o VTT já com 0600 e sem sobrescrever nada: `O_CREAT|O_EXCL`, como na biblioteca.
+
+    Escrever e só depois chamar `chmod` deixaria uma janela de leitura pública, e
+    escreveria através de um arquivo (ou link) plantado com esse nome.
+    """
+    path = Path(path)
+    effects.mkdir(path.parent, parents=True, exist_ok=True)
+    effects.unlink(path, missing_ok=True)
+    with (
+        effects.op("fs.write", path),
+        open(  # noqa: PTH123 - wraps an os.open() fd (explicit O_CREAT|O_EXCL flags/mode), no Path equivalent
+            os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600),
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as stream,
+    ):
+        effects.make_private(path)
+        stream.write(text)
+
+
+def _original_language(data):
+    """Idioma falado de fato: o que o yt-dlp marca como "(Original)" ou `<code>-orig`."""
+    automatic = data.get("automatic_captions") or {}
+    for code in automatic:
+        if str(code).endswith("-orig"):
+            return code
+    for code, tracks in automatic.items():
+        for track in tracks or []:
+            if "original" in str((track or {}).get("name") or "").lower():
+                return code
+    return None
+
+
+def relevant_langs(data, langs):
+    """Idiomas que valem listar, e quantos a fonte anuncia ao todo.
+
+    Os pedidos em `langs` mais o original; nunca as centenas de traduções automáticas
+    que o YouTube gera sob demanda. Sem nenhum desses, os primeiros da lista servem
+    de amostra, para ninguém achar que a fonte não tem legenda.
+    """
+    manual = set(data.get("subtitles") or {})
+    automatic = set(data.get("automatic_captions") or {})
+    every = sorted(manual | automatic)
+    listed = [code for code in langs if code in manual or code in automatic]
+    original = _original_language(data)
+    if original and original not in listed:
+        listed.append(original)
+    if not listed:
+        listed = every[:MAX_SUBTITLE_LANGS]
+    return listed[:MAX_SUBTITLE_LANGS], len(every)
+
+
+def metadata(url):
+    """Título, autoria e duração da página, num pedido só e sem baixar mídia.
+
+    É o mínimo que o C2 precisa para listar canal e duração, e `probe_remote` seria
+    caro demais aqui: ele ainda escreve as legendas em disco. Falhar não é erro — a
+    URL continua registrável —, então o chamador recebe `{}` e segue.
+    """
+    # Só páginas reconhecidas, nunca uma URL qualquer vinda do chat; link aberto conferido e atrás do proxy.
+    target, open_web = _ytdlp_target(url)
+    try:
+        with _egress(open_web):
+            raw, warnings = run(["--dump-single-json", "--skip-download", "--", target], timeout=60, op="metadata")
+    except (ProviderError, OSError) as exc:
+        record_warning("YTDLP_WARNING", f"metadados não vieram desta página: {exc}")
+        return {}
+    for w in warnings:
+        record_warning("YTDLP_WARNING", w)
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        data = None
+    if not isinstance(data, dict):
+        record_warning("YTDLP_WARNING", "metadados não vieram desta página: o yt-dlp devolveu metadados inválidos.")
+        return {}
+    duration = data.get("duration")
+    # `uploader_id` do TikTok já vem como `@handle`; o do YouTube é o id do canal.
+    handle = data.get("uploader_id") or data.get("channel_id")
+    return {
+        "title": data.get("title") or data.get("fulltitle") or None,
+        "creator": data.get("uploader") or data.get("channel") or None,
+        "handle": str(handle) if handle else None,
+        "creator_url": data.get("uploader_url") or data.get("channel_url") or None,
+        "duration_s": float(duration) if isinstance(duration, (int, float)) else None,
+    }
+
+
+def _referer_args(referer):
+    """`--referer PÁGINA` para o yt-dlp, só com página HTTPS pública; vazio sem referer."""
+    if referer is None:
+        return []
+    if not public_url(referer):
+        raise ProviderError("A página de origem do vídeo precisa ser HTTPS pública, sem credenciais.")
+    return ["--referer", referer]
+
+
+# Fontes abertas (link direto e página com player embutido): o que o yt-dlp busca é conferido antes (`stream_check`).
+OPEN_WEB_PROVIDERS = ("direct_stream", "embedded_player")
+
+
+def _ytdlp_target(url):
+    """`(url, link_aberto)`: a URL que o yt-dlp recebe, só de fonte reconhecida, e se ela é link aberto.
+
+    YouTube, TikTok e Instagram seguem como vieram. Link direto (`.m3u8`/`.mp4`) passa por
+    `stream_check.vet`, que lê a playlist e confere cada endereço; o yt-dlp recebe a URL final e
+    roda atrás do proxy de saída conferida (`_egress`). Página não é aberta aqui (`read_pages=False`).
+    """
+    from .providers import resolve
+
+    if resolve(url, read_pages=False)["provider"] not in OPEN_WEB_PROVIDERS:
+        return url, False
+    from .stream_check import vet
+
+    return vet(url), True
+
+
+@contextlib.contextmanager
+def _egress(open_web):
+    """Com `open_web`, o proxy de saída conferida no ar e uma pasta vazia (sem FFmpeg) para as chamadas de `run`."""
+    if not open_web:
+        yield
+        return
+    with egress_proxy.GuardedProxy() as proxy, effects.temp_dir() as no_ffmpeg:
+        token = _EGRESS.set((proxy.url, str(no_ffmpeg)))
+        try:
+            yield
+        finally:
+            _EGRESS.reset(token)
+
+
+def probe_remote(  # noqa: C901 - existing size; one branch per cache/retry/subtitle-language outcome
+    url, langs=SUBTITLE_LANGS, cache=None, referer=None
+):
+    """O que a fonte conta sobre si: duração, capítulos, legendas e descrição.
+
+    Um único pedido ao yt-dlp, sem baixar vídeo, com as mesmas pausas de
+    `GB_YTDLP_SLEEP` do resto da skill. O VTT das legendas fica na pasta privada
+    `.getbrolls-sources/` com 0600, nunca dentro de `brolls/`.
+    """
+    # Só páginas reconhecidas, nunca uma URL qualquer vinda do chat.
+    via = _referer_args(referer)
+    target, open_web = _ytdlp_target(url)
+    cache = Path(cache) if cache is not None else None
+    if cache is not None:
+        effects.mkdir(cache, parents=True, exist_ok=True, mode=0o700)
+        cache.chmod(0o700)
+    subtitles = {}
+    with effects.temp_dir(folder=str(cache) if cache else None) as work, _egress(open_web):
+        info = Path(work) / "probe.info.json"
+        # `--dump-single-json` implicaria `--simulate`, e em modo simulado o yt-dlp não
+        # escreve arquivo nenhum: os `.vtt` nunca chegavam ao disco e o `inspect` voltava
+        # sem uma única fala, por mais legendas que a fonte anunciasse. Com `--no-simulate`
+        # os arquivos aparecem e o stdout deixa de trazer JSON, então os metadados vêm do
+        # `.info.json` escrito ao lado das legendas.
+        _, warnings = run(
+            [
+                # Uma faixa que falha (429 num idioma só, tradução que sumiu) não pode
+                # derrubar a análise inteira: sem isto, o `pt` já baixado ia para o lixo
+                # junto com o erro do `en`. O que falta é tratado logo abaixo.
+                "--ignore-errors",
+                "--no-simulate",
+                "--skip-download",
+                "--write-info-json",
+                "--write-auto-subs",
+                "--sub-langs",
+                ",".join(langs),
+                "--sub-format",
+                "vtt",
+                "-o",
+                str(Path(work) / "probe.%(ext)s"),
+                "--quiet",
+                "--no-warnings",
+                *via,
+                "--",
+                target,
+            ],
+            timeout=60,
+            # No `op=` here: tests/test_inspect.py replaces `social.run` with a spy whose
+            # signature is `(arguments, timeout=180)` — passing any extra keyword would
+            # break that existing test. The `event=subprocess` line still fires for this
+            # call, just with `op=-`.
+        )
+        for w in warnings:
+            record_warning("YTDLP_WARNING", w)
+        # lenient: post-condition of yt-dlp in our temp folder
+        if info.is_file():
+            raw = info.read_text(encoding="utf-8", errors="replace")
+        else:
+            # `--ignore-errors` engole o motivo junto com o erro. Um segundo pedido, só
+            # de metadados (simulado, sem escrever arquivo nenhum), devolve a
+            # classificação de sempre — vídeo privado, 429, sessão exigida — em vez de um
+            # "metadados inválidos" genérico, e ainda salva título, duração e capítulos.
+            raw, more = run(["--dump-single-json", "--skip-download", *via, "--", target], timeout=60, op="metadata")
+            for w in more:
+                record_warning("YTDLP_WARNING", w)
+        try:
+            data = json.loads(raw)
+        except ValueError:
+            raise ProviderError("yt-dlp retornou metadados inválidos.") from None
+        if not isinstance(data, dict):
+            raise ProviderError("yt-dlp retornou metadados inválidos.")
+        found = {_language_from(v.name): v for v in sorted(Path(work).glob("*.vtt"))}
+        # Na ordem pedida em `langs`: o primeiro idioma é o preferido quando dois
+        # trazem os mesmos tempos, e é essa ordem que `candidate_windows` respeita.
+        ordered = [found.pop(code) for code in langs if code in found]
+        ordered += [found[code] for code in sorted(found)]
+        for vtt in ordered:
+            from .inspecting import parse_vtt, parse_vtt_language
+
+            text = vtt.read_text(encoding="utf-8", errors="replace")
+            # O cabeçalho `Language:` do próprio arquivo vale mais que o sufixo do
+            # nome quando o sufixo não diz nada.
+            language = _language_from(vtt.name)
+            if language == "und":
+                language = parse_vtt_language(text) or language
+            destination = None
+            if cache is not None:
+                stem = hashlib.sha256(url.encode()).hexdigest()[:16]
+                destination = cache / f"{stem}-{language}.vtt"
+                logs.event(
+                    _log,
+                    logging.DEBUG,
+                    "cache_reuse",
+                    kind="subtitle",
+                    # lenient: log field only: cache hit or miss
+                    status="hit" if destination.exists() else "miss",
+                )
+                _write_private(destination, text)
+            subtitles[language] = {
+                "path": str(destination) if destination else None,
+                "cues": parse_vtt(text),
+            }
+    duration = data.get("duration")
+    chapters = []
+    for chapter in data.get("chapters") or []:
+        if not isinstance(chapter, dict) or chapter.get("start_time") is None:
+            continue
+        chapters.append(
+            {
+                "start_s": float(chapter["start_time"]),
+                "end_s": float(chapter["end_time"]) if chapter.get("end_time") is not None else None,
+                "title": chapter.get("title") or "",
+            }
+        )
+    listed, total = relevant_langs(data, langs)
+    # Qual faixa é a fala de verdade. As outras são tradução automática do YouTube, e
+    # comparar a `--query` com uma delas invertia o aviso de idioma: uma fonte em
+    # inglês com faixa `pt` traduzida respondia "legenda em PT" para uma query em EN.
+    original = _original_language(data) or data.get("language")
+    return {
+        "url": url,
+        "title": data.get("title"),
+        "original_lang": str(original) if original else None,
+        "duration_s": float(duration) if isinstance(duration, (int, float)) else None,
+        "chapters": chapters,
+        "subtitle_langs": listed,
+        # Quantas faixas a fonte anuncia ao todo; `subtitle_langs` mostra só as úteis.
+        "subtitle_langs_total": total,
+        "description": data.get("description") or "",
+        # Só o que a fonte declara: serve para avisar sobre 360°/VR antes da prévia.
+        "tags": [str(tag) for tag in (data.get("tags") or []) if tag],
+        "subtitles": subtitles,
+    }
+
+
+def segment_arguments(start, end, output, open_web=False):
+    """Os argumentos do yt-dlp para baixar `[start, end]` em `output`.
+
+    No link aberto, o vídeo inteiro, num formato HTTP/HLS de arquivo único, pelo downloader nativo e sem
+    correção do FFmpeg: o corte de `[start, end]` é local, depois (`cut_local`).
+    """
+    if open_web:
+        return ["-f", OPEN_WEB_FORMAT, "--downloader", "native", "--fixup", "never", "-o", str(output)]
+    return [
+        "-f",
+        SEGMENT_FORMAT,
+        "--download-sections",
+        f"*{start}-{end}",
+        "--force-keyframes-at-cuts",
+        "--merge-output-format",
+        "mp4",
+        "--remux-video",
+        "mp4",
+        "-o",
+        str(output),
+    ]
+
+
+def _local_input(path):
+    """`-i path` para o FFmpeg só com arquivo local e formato de vídeo: nada de rede nem de playlist."""
+    return ["-protocol_whitelist", LOCAL_PROTOCOLS, "-format_whitelist", LOCAL_FORMATS, "-i", str(path)]
+
+
+def cut_local(source, output, start, end):
+    """Corta `[start, end]` do vídeo baixado `source` em `output` (MP4 H.264/AAC), sem rede, e confere a leitura."""
+    from .media import run as media_run
+
+    # O HLS baixado é MPEG-TS, onde o salto na entrada cai depois do quadro-chave: salta até
+    # `CUT_SEEK_MARGIN_S` antes e decodifica o resto até `start`, preciso no quadro.
+    coarse = max(0.0, start - CUT_SEEK_MARGIN_S)
+    media_run(
+        [
+            *("ffmpeg", "-v", "error", "-ss", str(coarse)),
+            *_local_input(source),
+            *("-ss", str(start - coarse), "-t", str(end - start), "-map", "0:v:0", "-map", "0:a?"),
+            *("-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p", "-c:a", "aac"),
+            *("-movflags", "+faststart", str(output)),
+        ],
+        op="open_web_cut",
+    )
+    media_run(["ffmpeg", "-v", "error", *_local_input(output), "-f", "null", "-"], op="decode_check")
+
+
+def download_segment(url, target, start, end, referer=None):
+    """Baixa `[start, end]` de uma página social para `target` (sem sobrescrever).
+
+    A duração entregue não é conferida aqui: quem chama (`acquisition`) aplica a mesma
+    regra de intervalo das outras fontes, inclusive o `tolerant` da varredura."""
+    from .media import run as media_run
+
+    # Only recognized social pages, never a user-provided command or arbitrary URL.
+    via = _referer_args(referer)
+    source, open_web = _ytdlp_target(url)
+    if not all(math.isfinite(v) for v in (start, end)) or start < 0 or end <= start:
+        raise ProviderError("Intervalo inválido para download social.")
+    target = Path(target)
+    if _paths.strict_exists(target):
+        raise ProviderError("Destino existente; não foi sobrescrito.")
+    effects.mkdir(target.parent, parents=True, exist_ok=True)
+    with effects.temp_dir(folder=target.parent) as folder:
+        output = Path(folder) / "source.mp4"
+        # Link aberto: o vídeo inteiro em `full.mp4`, e o corte local dele em `output`.
+        fetched = Path(folder) / "full.mp4" if open_web else output
+        extra = {"timeout": OPEN_WEB_TIMEOUT_S} if open_web else {}
+        with _egress(open_web):
+            _, warnings = run(
+                [*segment_arguments(start, end, fetched, open_web), *via, "--", source], op="segment", **extra
+            )
+        for w in warnings:
+            record_warning("YTDLP_WARNING", w)
+        if open_web:
+            cut_local(fetched, output, start, end)
+        else:
+            media_run(["ffmpeg", "-v", "error", "-i", str(output), "-f", "null", "-"])
+        # Exclusive publication also protects a target created while downloading.
+        with (
+            effects.op("fs.copy", target, fallback=(FileExistsError,)),
+            output.open("rb") as source,
+            target.open("xb") as dest,
+        ):
+            try:
+                shutil.copyfileobj(source, dest)
+            except BaseException:
+                effects.unlink(target, missing_ok=True)
+                raise
+    return target
+
+
+def doctor():
+    exe, source = ytdlp_in_use()
+    return {
+        "engine": "yt-dlp",
+        "installed": exe is not None,
+        "executable": str(exe) if exe is not None else None,
+        "source": source,
+        "javascript_runtime": "deno" if shutil.which("deno") else "node" if shutil.which("node") else None,
+        "youtube_api_key_required": False,
+        "instagram": "Navegador/Playwright → configs vídeo+áudio → " + _instagram_pairs_command(),
+        "scope": "Disponibilidade de executáveis; não comprova extração ao vivo nem versão/runtime EJS.",
+    }

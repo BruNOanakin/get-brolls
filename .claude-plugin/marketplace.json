@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "engenheirodevideo",
+  "description": "Engenheiro de Vídeo plugins for Claude Code: get-brolls, B-roll planning and sourcing with human review and provenance.",
+  "owner": {
+    "name": "Bruno Moreira — Engenheiro de Vídeo"
+  },
+  "plugins": [
+    {
+      "name": "get-brolls",
+      "source": "./",
+      "version": "2.6.2",
+      "author": {
+        "name": "Bruno Moreira — Engenheiro de Vídeo",
+        "url": "https://www.instagram.com/zbrunomoreira/"
+      },
+      "description": "B-roll planning and sourcing from YouTube, Instagram, TikTok and stock providers, with Storyboard human review and licensed delivery with provenance."
+    }
+  ]
+}

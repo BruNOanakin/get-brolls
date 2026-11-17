@@ -1,0 +1,300 @@
+import json
+import shutil
+import socket
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+from typing import Any
+from unittest.mock import patch
+
+import _isolation  # noqa: F401  (efeito de import: define GB_HOME)  # pylint: disable=unused-import
+from _media import synth_audio
+from _paths import ROOT  # noqa: F401  (efeito de import: insere scripts/ em sys.path)  # pylint: disable=unused-import
+
+from getbrolls import instagram_pairs as ig
+from getbrolls import instagram_urls
+
+# Um host de CDN com IPv6 na frente e dois IPv4, na ordem em que o resolver os devolve.
+CDN_ADDRESSES = [
+    (socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("2606:2800:220:1:248:1893:25c8:1946", 443, 0, 0)),
+    (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
+    (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.35", 443)),
+]
+
+
+class InstagramRecoveryTests(unittest.TestCase):
+    def test_rejects_unsafe_urls_and_config_output_escape(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for index, url in enumerate(
+                (
+                    "file:///etc/passwd",
+                    "http://127.0.0.1/media",
+                    "https://user:secret@example.org/media",
+                    "https://10.0.0.2/media",
+                    "https://[::1]/media",
+                    "https://localhost/media",
+                    "https://camera.local/media",
+                )
+            ):
+                with self.subTest(url=url):
+                    conf = root / f"unsafe-{index}.conf"
+                    conf.write_text(f'url = "{url}"\n', encoding="utf-8")
+                    with self.assertRaises(ig.CollectError):
+                        ig.parse_curl_config(conf)
+            public_name = root / "public-name.conf"
+            public_name.write_text('url = "https://media.example.test/video"\n', encoding="utf-8")
+            private_dns = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))]
+            with patch.object(socket, "getaddrinfo", return_value=private_dns), self.assertRaises(ig.CollectError):
+                ig.parse_curl_config(public_name)
+            mixed_dns = [
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.2", 443)),
+            ]
+            with patch.object(socket, "getaddrinfo", return_value=mixed_dns), self.assertRaises(ig.CollectError):
+                ig.parse_curl_config(public_name)
+            trailing_dot = root / "trailing-dot.conf"
+            trailing_dot.write_text('url = "https://media.example.test./video"\n', encoding="utf-8")
+            public_dns = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+            with patch.object(socket, "getaddrinfo", return_value=public_dns), self.assertRaises(ig.CollectError):
+                ig.parse_curl_config(trailing_dot)
+            for output in ("../../outside.mp4", "/etc/passwd"):
+                with self.subTest(output=output), self.assertRaises(ig.CollectError):
+                    ig.resolve_config_output(output, root)
+            for stem in (".._01_clip", ".hidden", "bad\\name", "bad:name"):
+                with self.subTest(stem=stem), self.assertRaises(ig.CollectError):
+                    ig.infer_output_for_stem(stem, root / "out", "auto")
+
+    def test_accepts_public_https_and_output_inside_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            inside = root / "work/source.mp4"
+            conf = root / "safe.conf"
+            conf.write_text(f'url = "https://example.org/media"\noutput = "{inside}"\n', encoding="utf-8")
+            public_dns = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+            with patch.object(socket, "getaddrinfo", return_value=public_dns):
+                parsed = ig.parse_curl_config(conf)
+            self.assertEqual("https://example.org/media", parsed["url"])
+            self.assertEqual("example.org:443:93.184.216.34", parsed["curl_resolve"])
+            self.assertEqual(inside.resolve(), ig.resolve_config_output(str(inside), root))
+
+    def test_curl_resolution_pins_every_address(self):
+        """O `--resolve` leva todos os endereços checados, IPv4 primeiro: rede só IPv4 não cai num IPv6."""
+        with (
+            patch.object(socket, "getaddrinfo", return_value=CDN_ADDRESSES),
+            patch.object(instagram_urls, "_curl_takes_address_list", return_value=True),
+        ):
+            resolved = instagram_urls._curl_resolution("media.example.test", Path("x.conf"))  # pylint: disable=protected-access
+        self.assertEqual(
+            "media.example.test:443:93.184.216.34,93.184.216.35,[2606:2800:220:1:248:1893:25c8:1946]",
+            resolved,
+        )
+
+    def test_an_old_curl_gets_only_the_first_ipv4(self):
+        """curl < 7.59 pula a lista inteira e resolve pelo DNS: o pin fica num endereço só."""
+        with (
+            patch.object(socket, "getaddrinfo", return_value=CDN_ADDRESSES),
+            patch.object(instagram_urls, "_curl_takes_address_list", return_value=False),
+        ):
+            resolved = instagram_urls._curl_resolution("media.example.test", Path("x.conf"))  # pylint: disable=protected-access
+        self.assertEqual("media.example.test:443:93.184.216.34", resolved)
+
+    def test_the_curl_version_decides_the_address_list(self):
+        check = instagram_urls._curl_takes_address_list  # pylint: disable=protected-access
+        self.addCleanup(check.cache_clear)
+        for answer, expected in (
+            ("curl 7.58.0 (x86_64-pc-linux-gnu) libcurl/7.58.0", False),
+            ("curl 7.59.0 (x86_64-pc-linux-gnu) libcurl/7.59.0", True),
+            ("curl 8.7.1 (x86_64-apple-darwin25.0) libcurl/8.7.1", True),
+            ("algo que não é curl", False),
+            (OSError("curl ausente"), False),
+        ):
+            with self.subTest(answer=str(answer)):
+                check.cache_clear()
+                if isinstance(answer, BaseException):
+                    effect: Any = answer
+                else:
+                    effect = [subprocess.CompletedProcess(["curl", "--version"], 0, answer, "")]
+                with patch.object(subprocess, "run", side_effect=effect):
+                    self.assertIs(expected, check())
+
+    def test_unsafe_stem_fails_only_that_item(self):
+        """Um stem inseguro vira falha daquele item; com --continue-on-error o lote segue."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            configs = root / "configs"
+            configs.mkdir()
+            for stem in ("0..x", "02_TEST"):
+                (configs / (stem + "_video.conf")).write_text('url = "https://example.org/v"\n', encoding="utf-8")
+                (configs / (stem + "_audio.conf")).write_text('url = "https://example.org/a"\n', encoding="utf-8")
+            summary_path = root / "summary.json"
+
+            def collected(stem, _video, _audio, output, _args):
+                return {"stem": stem, "output": str(output)}
+
+            args = ["--config-dir", str(configs), "--output-dir", str(root / "out"), "--layout", "flat"]
+            args += ["--summary-json", str(summary_path), "--continue-on-error", "--pace", "0"]
+            with patch.object(ig, "ensure_tool"), patch.object(ig, "_collect_one", side_effect=collected) as collect:
+                self.assertEqual(1, ig.main(args))
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        self.assertEqual(["0..x", "02_TEST"], [item["stem"] for item in summary["results"]])
+        unsafe, safe = summary["results"]
+        self.assertEqual("failed", unsafe["status"])
+        self.assertIn("stem de config inseguro", unsafe["reason"])
+        self.assertEqual("done", safe["status"])
+        self.assertEqual(1, collect.call_count)
+        self.assertEqual((1, 1), (summary["done"], summary["failed"]))
+        # No log, o stem recusado sai com um id fixo, nunca cru.
+        self.assertEqual("unsafe-stem", ig._safe_item_id("0..x"))  # pylint: disable=protected-access
+
+    def test_an_unsafe_stem_spends_no_pause_and_no_slot(self):
+        """O stem recusado falha na hora: não gasta a pausa entre itens nem uma vaga do --max-per-run."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            configs = root / "configs"
+            configs.mkdir()
+            for stem in ("00_A", "1..x", "2_B"):
+                (configs / (stem + "_video.conf")).write_text('url = "https://example.org/v"\n', encoding="utf-8")
+                (configs / (stem + "_audio.conf")).write_text('url = "https://example.org/a"\n', encoding="utf-8")
+            summary_path = root / "summary.json"
+
+            def collected(stem, _video, _audio, output, _args):
+                return {"stem": stem, "output": str(output)}
+
+            args = ["--config-dir", str(configs), "--output-dir", str(root / "out"), "--layout", "flat"]
+            args += ["--summary-json", str(summary_path), "--continue-on-error", "--pace", "5-5", "--max-per-run", "2"]
+            with (
+                patch.object(ig, "ensure_tool"),
+                patch.object(ig, "_collect_one", side_effect=collected),
+                patch.object(ig, "_pause_before") as pause,
+            ):
+                ig.main(args)
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        self.assertEqual(["done", "failed", "done"], [item["status"] for item in summary["results"]])
+        self.assertEqual(["2_B"], [call.args[0] for call in pause.call_args_list])
+
+    def test_failed_transfer_does_not_poison_retry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            conf = root / "video.conf"
+            conf.write_text('url = "https://example.org/private-media"\n', encoding="utf-8")
+            target = root / "part.mp4"
+
+            def fail(cmd, **kwargs):
+                Path(cmd[cmd.index("--output") + 1]).write_bytes(b"partial")
+                raise subprocess.CalledProcessError(18, cmd)
+
+            kwargs: dict[str, Any] = {
+                "cfg_path": conf,
+                "part_path": target,
+                "config_output_root": root,
+                "force_download": False,
+                "prefer_config_output": False,
+            }
+            public_dns = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+            with (
+                patch.object(socket, "getaddrinfo", return_value=public_dns),
+                patch.object(subprocess, "run", side_effect=fail) as called,
+                self.assertRaises(ig.CollectError),
+            ):
+                ig.download_or_reuse(**kwargs)
+            self.assertFalse(target.exists())
+            command = called.call_args.args[0]
+            self.assertIn("--resolve", command)
+            self.assertNotIn("--location", command)
+
+            def success(cmd, **kwargs):
+                Path(cmd[cmd.index("--output") + 1]).write_bytes(b"complete")
+
+            with (
+                patch.object(socket, "getaddrinfo", return_value=public_dns),
+                patch.object(subprocess, "run", side_effect=success),
+            ):
+                self.assertEqual(ig.download_or_reuse(**kwargs), "downloaded")
+            self.assertEqual(target.read_bytes(), b"complete")
+
+    def test_merge_never_overwrites_existing_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "existing.mp4"
+            output.write_bytes(b"keep")
+            with self.assertRaises(ig.CollectError):
+                ig.process_one(
+                    stem="01_SAFE",
+                    video_config=root / "video.conf",
+                    audio_config=root / "audio.conf",
+                    output=output,
+                    parts_dir=root / "parts",
+                    config_output_root=root,
+                    force_download=False,
+                    prefer_config_output=False,
+                    copy_streams=False,
+                )
+            self.assertEqual(b"keep", output.read_bytes())
+
+    def test_exclusive_publication_refuses_racing_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pending = root / "pending.mp4"
+            output = root / "output.mp4"
+            pending.write_bytes(b"new")
+            output.write_bytes(b"keep")
+            with self.assertRaises(ig.CollectError):
+                ig.publish_exclusive(pending, output)
+            self.assertEqual(b"keep", output.read_bytes())
+
+    @unittest.skipUnless(shutil.which("ffmpeg"), "FFmpeg required")
+    def test_separate_video_audio_merge_and_duplicate_detection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            configs = root / "configs"
+            configs.mkdir()
+            video = root / "video.mp4"
+            audio = root / "audio.m4a"
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-v",
+                    "error",
+                    "-f",
+                    "lavfi",
+                    "-i",
+                    "testsrc2=size=160x90:rate=10:duration=1",
+                    "-c:v",
+                    "libx264",
+                    "-pix_fmt",
+                    "yuv420p",
+                    str(video),
+                ],
+                check=True,
+            )
+            synth_audio(audio, frequency=440, duration=1)
+            for stem in ("01_TEST", "02_TEST"):
+                (configs / (stem + "_video.conf")).write_text(
+                    f'url = "https://example.org/video"\noutput = "{video}"\n', encoding="utf-8"
+                )
+                (configs / (stem + "_audio.conf")).write_text(
+                    f'url = "https://example.org/audio"\noutput = "{audio}"\n', encoding="utf-8"
+                )
+            args = [
+                "--config-dir",
+                str(configs),
+                "--output-dir",
+                str(root / "out"),
+                "--parts-dir",
+                str(root / "parts"),
+                "--config-output-root",
+                str(root),
+                "--layout",
+                "flat",
+                "--fail-on-duplicate-audio",
+                "--pace",
+                "0",
+            ]
+            public_dns = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+            with patch.object(socket, "getaddrinfo", return_value=public_dns):
+                self.assertEqual(1, ig.main(args))
+            report = ig.verify_output(root / "out/01_TEST.mp4")
+            self.assertTrue(report["audio_hash_sha256"])
+            self.assertEqual(ig.audio_hash(root / "out/01_TEST.mp4"), ig.audio_hash(root / "out/02_TEST.mp4"))
